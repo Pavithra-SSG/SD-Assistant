@@ -1,0 +1,58 @@
+[
+  {
+    "Flow_ID": "CHAT-01",
+    "Stage": "Welcome",
+    "Bot_Prompt": "What can I help with?",
+    "Primary_Options": "Password or account|VPN|Software|Hardware|MFA|Email|Access|Network|Printer|Meetings/Teams|Mobile device|Security concern|Something else",
+    "UX_and_Security_Rule": "Always show free-text input below options."
+  },
+  {
+    "Flow_ID": "CHAT-02",
+    "Stage": "Confirm classification",
+    "Bot_Prompt": "This looks like [predicted category]. Is that right?",
+    "Primary_Options": "Yes|Choose another category|Not sure",
+    "UX_and_Security_Rule": "Do not force the predicted category."
+  },
+  {
+    "Flow_ID": "CHAT-03",
+    "Stage": "Guided issue choice",
+    "Bot_Prompt": "Which option best describes the issue?",
+    "Primary_Options": "Load category-specific issue choices|Other / Not listed",
+    "UX_and_Security_Rule": "Options narrow retrieval; Other opens free text."
+  },
+  {
+    "Flow_ID": "CHAT-04",
+    "Stage": "Required context",
+    "Bot_Prompt": "Ask one question at a time using Dynamic_Form_Fields.",
+    "Primary_Options": "Buttons/dropdowns where finite; text/file only where necessary",
+    "UX_and_Security_Rule": "Never request secrets, OTPs, passwords, recovery codes, or full personal data."
+  },
+  {
+    "Flow_ID": "CHAT-05",
+    "Stage": "Safety and scope",
+    "Bot_Prompt": "Is anyone else affected? Is there a safety or security concern?",
+    "Primary_Options": "Only me|Several users|Whole site|Unknown; plus risk-specific choices",
+    "UX_and_Security_Rule": "Run before troubleshooting."
+  },
+  {
+    "Flow_ID": "CHAT-06",
+    "Stage": "Resolution",
+    "Bot_Prompt": "I found a suitable procedure. Start Attempt 1?",
+    "Primary_Options": "Start|Show steps|Raise ticket instead|Talk to human",
+    "UX_and_Security_Rule": "Human option remains available."
+  },
+  {
+    "Flow_ID": "CHAT-07",
+    "Stage": "Validation",
+    "Bot_Prompt": "Did the exact issue work after this step?",
+    "Primary_Options": "Yes, resolved|No, same issue|Different error|Could not try it",
+    "UX_and_Security_Rule": "Do not infer success from silence."
+  },
+  {
+    "Flow_ID": "CHAT-08",
+    "Stage": "Escalation",
+    "Bot_Prompt": "I will hand this to support with everything already collected.",
+    "Primary_Options": "Create handoff|Review summary first|Cancel",
+    "UX_and_Security_Rule": "Show a user-readable summary before transfer."
+  }
+]

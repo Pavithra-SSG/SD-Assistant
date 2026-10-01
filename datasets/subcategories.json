@@ -1,0 +1,506 @@
+[
+  {
+    "Subcategory_ID": "CAT-01-01",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Forgot password",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-02",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Account locked",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-03",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Password expired",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-04",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Password sync",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-05",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "New hire login",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-06",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Shared/service account",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-01-07",
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Subcategory": "Possible compromise",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-01",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Cannot connect",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-02",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Dropouts",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-03",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Connected no internal access",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-04",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Certificate",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-05",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Slow",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-06",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "First setup",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-07",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Client crash",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-02-08",
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Subcategory": "Tunnel mode",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-01",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Standard license",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-02",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Managed install",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-03",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Activation failure",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-04",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Non-standard software",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-05",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Version upgrade",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-03-06",
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Subcategory": "Concurrent/floating license",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-01",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Laptop issue",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-02",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Monitor",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-03",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Keyboard",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-04",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Mouse",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-05",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Docking station",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-06",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Headset",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-04-07",
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Subcategory": "Asset tag request",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-05-01",
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Subcategory": "MFA not working",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-05-02",
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Subcategory": "Lost authenticator",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-05-03",
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Subcategory": "New device MFA",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-05-04",
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Subcategory": "SMS code fail",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-05-05",
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Subcategory": "App token issue",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-01",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Outlook crash",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-02",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Can't send/receive",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-03",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Mailbox full",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-04",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Missing emails",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-05",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Calendar sync",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-06-06",
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Subcategory": "Signature",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-07-01",
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Subcategory": "Can't access app",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-07-02",
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Subcategory": "Permission denied",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-07-03",
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Subcategory": "Role request",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-07-04",
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Subcategory": "New user access",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-07-05",
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Subcategory": "Shared drive access",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-01",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "No internet",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-02",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "WiFi issue",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-03",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "Slow network",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-04",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "DNS problem",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-05",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "Proxy error",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-08-06",
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Subcategory": "Internal site down",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-09-01",
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Subcategory": "Phishing report",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-09-02",
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Subcategory": "Suspicious email",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-09-03",
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Subcategory": "Malware alert",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-09-04",
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Subcategory": "Data leak concern",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-09-05",
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Subcategory": "Unauthorized access",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-01",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Can't print",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-02",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Printer offline",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-03",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Scan to email fail",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-04",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Toner low",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-05",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Driver issue",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-10-06",
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Subcategory": "Queue stuck",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-11-01",
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Subcategory": "Teams/Zoom/Slack issue",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-11-02",
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Subcategory": "Meeting join fail",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-11-03",
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Subcategory": "Audio/video",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-11-04",
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Subcategory": "Screen share",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-11-05",
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Subcategory": "Chat history",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-01",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "Phone enrollment",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-02",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "MDM profile",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-03",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "App install fail",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-04",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "Lost device",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-05",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "Wipe request",
+    "UX_Fallback": "Other / Not listed is always available"
+  },
+  {
+    "Subcategory_ID": "CAT-12-06",
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Subcategory": "BYOD setup",
+    "UX_Fallback": "Other / Not listed is always available"
+  }
+]

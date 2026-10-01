@@ -1,0 +1,242 @@
+[
+  {
+    "approval_id": "APR-0001",
+    "action": "software_exception",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0002",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0003",
+    "action": "guest_access",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0004",
+    "action": "privileged_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0005",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0006",
+    "action": "guest_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0007",
+    "action": "privileged_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0008",
+    "action": "privileged_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0009",
+    "action": "software_exception",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0010",
+    "action": "privileged_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0011",
+    "action": "remote_wipe",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0012",
+    "action": "privileged_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0013",
+    "action": "software_exception",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0014",
+    "action": "software_exception",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0015",
+    "action": "software_exception",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0016",
+    "action": "software_exception",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0017",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0018",
+    "action": "guest_access",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0019",
+    "action": "guest_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0020",
+    "action": "guest_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0021",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0022",
+    "action": "guest_access",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0023",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0024",
+    "action": "remote_wipe",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0025",
+    "action": "remote_wipe",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0026",
+    "action": "remote_wipe",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0027",
+    "action": "guest_access",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0028",
+    "action": "privileged_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0029",
+    "action": "guest_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0030",
+    "action": "remote_wipe",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0031",
+    "action": "privileged_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0032",
+    "action": "software_exception",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0033",
+    "action": "software_exception",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0034",
+    "action": "privileged_access",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0035",
+    "action": "remote_wipe",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0036",
+    "action": "remote_wipe",
+    "status": "REJECTED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0037",
+    "action": "privileged_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0038",
+    "action": "privileged_access",
+    "status": "PENDING",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0039",
+    "action": "privileged_access",
+    "status": "APPROVED",
+    "synthetic": true
+  },
+  {
+    "approval_id": "APR-0040",
+    "action": "remote_wipe",
+    "status": "REJECTED",
+    "synthetic": true
+  }
+]

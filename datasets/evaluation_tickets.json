@@ -1,0 +1,82 @@
+[
+  {
+    "Ticket_ID": "EVAL-001",
+    "Scenario_Ref": "TKT-2001",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-002",
+    "Scenario_Ref": "TKT-2002",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-003",
+    "Scenario_Ref": "TKT-2003",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-004",
+    "Scenario_Ref": "TKT-2004",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-005",
+    "Scenario_Ref": "TKT-2005",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-006",
+    "Scenario_Ref": "TKT-2006",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-007",
+    "Scenario_Ref": "TKT-2007",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  },
+  {
+    "Ticket_ID": "EVAL-008",
+    "Scenario_Ref": "TKT-2008",
+    "Predicted_Category": "",
+    "Predicted_Priority": "",
+    "Actual_Path": "",
+    "Escalated": "",
+    "Matches_Expected": "",
+    "Notes": ""
+  }
+]

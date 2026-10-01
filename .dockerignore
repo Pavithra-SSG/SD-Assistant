@@ -1,0 +1,23 @@
+# Keep secrets, local data and tooling out of the image
+.env
+.env.*
+!.env.example
+.jwt_secret
+*.db
+*.db-*
+backups/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+eval_runs/
+docs/
+tests/
+.git/
+.github/
+.agent/
+.agents/
+.claude/
+.ralphy/
+*-temporary-passwords.csv
+attachments/

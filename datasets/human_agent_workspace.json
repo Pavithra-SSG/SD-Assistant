@@ -1,0 +1,52 @@
+[
+  {
+    "Panel": "Queue list",
+    "Displayed_Data": "Ticket, priority, status, SLA, category, requester alias, escalation reason, age",
+    "Controls": "Filter/sort/assign"
+  },
+  {
+    "Panel": "Case header",
+    "Displayed_Data": "Ticket/conversation IDs, ownership, status, verification badge, risk flags",
+    "Controls": "Take over/assign/change with reason"
+  },
+  {
+    "Panel": "Timeline",
+    "Displayed_Data": "Full chronological user/bot/tool/human events",
+    "Controls": "Search/filter; no deletion"
+  },
+  {
+    "Panel": "Collected facts",
+    "Displayed_Data": "Structured form/chat answers with source and timestamp",
+    "Controls": "Mark stale/contradictory"
+  },
+  {
+    "Panel": "Evidence",
+    "Displayed_Data": "KB passages, retrieval scores, selected/rejected articles",
+    "Controls": "Open source; record override"
+  },
+  {
+    "Panel": "Attempts",
+    "Displayed_Data": "Actions, prerequisites, outputs, validations",
+    "Controls": "Continue from next step; do not repeat"
+  },
+  {
+    "Panel": "Automation",
+    "Displayed_Data": "Tool request/result/correlation IDs, redacted",
+    "Controls": "Retry only if policy allows"
+  },
+  {
+    "Panel": "Security",
+    "Displayed_Data": "Verification level/result/expiry, risk flags, attachment status",
+    "Controls": "Restricted view"
+  },
+  {
+    "Panel": "Notes",
+    "Displayed_Data": "User-visible reply and separate private note",
+    "Controls": "Never mix visibility"
+  },
+  {
+    "Panel": "Resolution",
+    "Displayed_Data": "Resolution code, cause, final action, user confirmation",
+    "Controls": "Resolve/reopen/return to bot"
+  }
+]

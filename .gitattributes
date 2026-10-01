@@ -1,0 +1,6 @@
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+deploy/Caddyfile text eol=lf
+*.pdf binary
+*.png binary

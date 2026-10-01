@@ -1,0 +1,98 @@
+[
+  {
+    "Field": "event_id",
+    "Description": "Unique immutable event identifier",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "ticket_id",
+    "Description": "Ticket/case correlation",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "conversation_id",
+    "Description": "Conversation correlation",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "timestamp_utc",
+    "Description": "UTC timestamp",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "actor_type",
+    "Description": "USER|BOT|TOOL|HUMAN|SYSTEM",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "actor_id",
+    "Description": "Pseudonymous or authorized identifier",
+    "Required": "Yes",
+    "Sensitivity": "Restricted"
+  },
+  {
+    "Field": "event_type",
+    "Description": "MESSAGE|QUESTION|ANSWER|RETRIEVAL|DECISION|TOOL_CALL|TOOL_RESULT|VALIDATION|STATUS|ESCALATION",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "content_redacted",
+    "Description": "User-visible/auditable content after secret filtering",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "structured_payload",
+    "Description": "JSON: selected options, IDs, results, scores, state deltas",
+    "Required": "Yes",
+    "Sensitivity": "Restricted"
+  },
+  {
+    "Field": "kb_ids",
+    "Description": "Retrieved and selected KB IDs",
+    "Required": "Conditional",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "confidence",
+    "Description": "Classifier/retrieval confidence and threshold version",
+    "Required": "Conditional",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "tool_name",
+    "Description": "Approved tool called",
+    "Required": "Conditional",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "tool_result_redacted",
+    "Description": "Status/code only, no secrets",
+    "Required": "Conditional",
+    "Sensitivity": "Restricted"
+  },
+  {
+    "Field": "verification_id",
+    "Description": "External verification transaction reference",
+    "Required": "Conditional",
+    "Sensitivity": "Restricted"
+  },
+  {
+    "Field": "verification_status",
+    "Description": "VERIFIED|FAILED|PENDING|NOT_AVAILABLE",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  },
+  {
+    "Field": "decision_reason",
+    "Description": "Why route/action/escalation was selected",
+    "Required": "Yes",
+    "Sensitivity": "No"
+  }
+]

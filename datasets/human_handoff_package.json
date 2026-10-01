@@ -1,0 +1,62 @@
+[
+  {
+    "Section": "Ticket identity",
+    "Required_Data": "ticket_id; conversation_id; created_at; channel; current_status",
+    "When": "Always",
+    "Agent_View": "Header"
+  },
+  {
+    "Section": "Requester context",
+    "Required_Data": "authenticated requester ID; location; device/asset reference; preferred verified contact",
+    "When": "Always",
+    "Agent_View": "Requester"
+  },
+  {
+    "Section": "Issue summary",
+    "Required_Data": "original statement; normalized summary; category; issue type; computed priority; impact; urgency",
+    "When": "Always",
+    "Agent_View": "Summary"
+  },
+  {
+    "Section": "Full interaction",
+    "Required_Data": "complete chat transcript and form answers in chronological order",
+    "When": "Always",
+    "Agent_View": "Timeline"
+  },
+  {
+    "Section": "Agent decisions",
+    "Required_Data": "classification history; confidence; user corrections; decision reasons; policy gates",
+    "When": "Always",
+    "Agent_View": "Decision trace"
+  },
+  {
+    "Section": "Knowledge evidence",
+    "Required_Data": "retrieved KB IDs; scores; cited passages; selected article; rejection reasons",
+    "When": "Always",
+    "Agent_View": "Evidence"
+  },
+  {
+    "Section": "Attempts",
+    "Required_Data": "Attempt 1 and Attempt 2 actions; prerequisites; user/tool result; validation outcome",
+    "When": "Conditional",
+    "Agent_View": "Troubleshooting"
+  },
+  {
+    "Section": "Tools",
+    "Required_Data": "tool name; request correlation; redacted result; error code; execution timestamp",
+    "When": "Conditional",
+    "Agent_View": "Automation"
+  },
+  {
+    "Section": "Identity assurance",
+    "Required_Data": "verification ID; level; method family; result; expiry; risk flags; no raw secret",
+    "When": "Conditional",
+    "Agent_View": "Security"
+  },
+  {
+    "Section": "Attachments",
+    "Required_Data": "safe links; filename; hash; malware-scan status",
+    "When": "Conditional",
+    "Agent_View": "Evidence"
+  }
+]

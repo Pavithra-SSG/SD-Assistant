@@ -1,0 +1,152 @@
+# Production stack. Start:   docker compose --env-file .env.production up -d --build
+# Services: db (Postgres) · migrate (one-shot schema + database accounts) · api (internal) · worker (timers,
+#           outbox, retention) · ui (Streamlit) · proxy (Caddy: HTTPS, the only public ports) · backup (daily
+#           pg_dump into ./backups) · watchdog (alerts IT when the service desk itself is down)
+# Full runbook: docs/DEPLOY.md
+name: servicedesk
+
+x-app: &app
+  image: servicedesk:${APP_VERSION:-latest}
+  build:
+    context: .
+    args:
+      APP_VERSION: ${APP_VERSION:-latest}
+  env_file: .env.production
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "5"}
+
+# The app connects as sd_app: it can read and write data but can't change tables or edit the audit log.
+x-app-env: &app-env
+  HOME: /tmp
+  DB_AUTO_MIGRATE: "0"
+  DATABASE_URL: postgresql://sd_app:${DB_APP_PASSWORD:?set DB_APP_PASSWORD}@db:5432/${POSTGRES_DB:-servicedesk}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-servicedesk}
+      POSTGRES_USER: ${POSTGRES_USER:-servicedesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+
+  # Runs once per `up`, as the database owner: applies schema changes and (re)creates the sd_app and
+  # sd_reporting accounts. The app services start only after it finishes successfully.
+  migrate:
+    <<: *app
+    restart: "no"
+    environment:
+      HOME: /tmp
+      DATABASE_URL: postgresql://${POSTGRES_USER:-servicedesk}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-servicedesk}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD}
+      DB_REPORTING_PASSWORD: ${DB_REPORTING_PASSWORD:-}
+    command: ["python", "manage.py", "migrate"]
+    depends_on:
+      db: {condition: service_healthy}
+
+  api:
+    <<: *app
+    environment: *app-env
+    # One process on purpose: the per-conversation lock is in memory (see docs/DEPLOY.md, "Scaling")
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000",
+              "--proxy-headers", "--forwarded-allow-ips", "*", "--timeout-graceful-shutdown", "20"]
+    volumes: [attachments:/data/attachments]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    <<: *app
+    environment: *app-env
+    command: ["python", "worker.py"]
+    stop_grace_period: 20s
+    volumes: [attachments:/data/attachments]  # deletes screenshots after their retention period
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  ui:
+    <<: *app
+    environment:
+      <<: *app-env
+      SERVICEDESK_API: http://api:8000
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501",
+              "--server.headless=true", "--browser.gatherUsageStats=false", "--server.maxUploadSize=10",
+              "--server.enableXsrfProtection=true", "--global.developmentMode=false"]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  watchdog:
+    <<: *app
+    environment:
+      <<: *app-env
+      WATCHDOG_API_URL: http://api:8000
+      WATCHDOG_UI_URL: http://ui:8501
+    command: ["python", "healthwatch.py"]
+    depends_on:
+      api: {condition: service_started}
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS, e.g. servicedesk.company.com}
+      CADDY_TLS: ${CADDY_TLS:-internal}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      ui: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:-servicedesk}
+      PGUSER: ${POSTGRES_USER:-servicedesk}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    depends_on:
+      db: {condition: service_healthy}
+
+volumes:
+  pgdata:
+  attachments:
+  caddy_data:
+  caddy_config:

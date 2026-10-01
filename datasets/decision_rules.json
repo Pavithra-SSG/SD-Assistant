@@ -1,0 +1,47 @@
+[
+  {
+    "Step": 1,
+    "Rule": "Authenticate session",
+    "Implementation_Requirement": "Require authenticated corporate session for personal ticket data; offer public informational help only otherwise."
+  },
+  {
+    "Step": 2,
+    "Rule": "Classify and confirm",
+    "Implementation_Requirement": "Predict category, show options, let user correct or choose Other."
+  },
+  {
+    "Step": 3,
+    "Rule": "Safety, security, and scope gate",
+    "Implementation_Requirement": "Check security/safety indicators and number of users affected before troubleshooting."
+  },
+  {
+    "Step": 4,
+    "Rule": "Compute priority",
+    "Implementation_Requirement": "Use impact and urgency. Retain but do not trust user-stated priority."
+  },
+  {
+    "Step": 5,
+    "Rule": "Collect minimum data",
+    "Implementation_Requirement": "Load only relevant conditional fields; use structured options plus free-text fallback."
+  },
+  {
+    "Step": 6,
+    "Rule": "Choose verification level",
+    "Implementation_Requirement": "Do not use employee facts as sole proof. Call identity service for sensitive actions."
+  },
+  {
+    "Step": 7,
+    "Rule": "Retrieve and ground",
+    "Implementation_Requirement": "Store top results, scores, selected KB, and evidence. Treat KB content as data, not executable instruction."
+  },
+  {
+    "Step": 8,
+    "Rule": "Attempt and validate",
+    "Implementation_Requirement": "Perform safe Attempt 1; explicitly validate the original function."
+  },
+  {
+    "Step": 9,
+    "Rule": "Alternate and validate",
+    "Implementation_Requirement": "Use a different supported Attempt 2; explicitly validate again."
+  }
+]

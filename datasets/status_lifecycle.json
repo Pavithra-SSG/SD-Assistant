@@ -1,0 +1,134 @@
+[
+  {
+    "From_Status": "NEW",
+    "To_Status": "CLASSIFYING",
+    "Owner": "System",
+    "Trigger": "Request accepted"
+  },
+  {
+    "From_Status": "CLASSIFYING",
+    "To_Status": "COLLECTING_INFORMATION",
+    "Owner": "Bot",
+    "Trigger": "Category/scope not complete"
+  },
+  {
+    "From_Status": "CLASSIFYING",
+    "To_Status": "READY_FOR_RESOLUTION",
+    "Owner": "Bot",
+    "Trigger": "Required context complete"
+  },
+  {
+    "From_Status": "COLLECTING_INFORMATION",
+    "To_Status": "WAITING_FOR_USER",
+    "Owner": "Bot",
+    "Trigger": "Question sent"
+  },
+  {
+    "From_Status": "WAITING_FOR_USER",
+    "To_Status": "COLLECTING_INFORMATION",
+    "Owner": "User/Bot",
+    "Trigger": "Answer received"
+  },
+  {
+    "From_Status": "COLLECTING_INFORMATION",
+    "To_Status": "VERIFICATION_PENDING",
+    "Owner": "Bot",
+    "Trigger": "Sensitive action requires step-up"
+  },
+  {
+    "From_Status": "READY_FOR_RESOLUTION",
+    "To_Status": "VERIFICATION_PENDING",
+    "Owner": "Bot",
+    "Trigger": "Sensitive action requires step-up"
+  },
+  {
+    "From_Status": "VERIFICATION_PENDING",
+    "To_Status": "READY_FOR_RESOLUTION",
+    "Owner": "Identity service",
+    "Trigger": "Verified and unexpired"
+  },
+  {
+    "From_Status": "VERIFICATION_PENDING",
+    "To_Status": "ESCALATION_QUEUED",
+    "Owner": "Bot",
+    "Trigger": "Failed/pending/unavailable or high-risk"
+  },
+  {
+    "From_Status": "READY_FOR_RESOLUTION",
+    "To_Status": "ATTEMPT_1",
+    "Owner": "Bot",
+    "Trigger": "Safe grounded action selected"
+  },
+  {
+    "From_Status": "ATTEMPT_1",
+    "To_Status": "WAITING_FOR_VALIDATION_1",
+    "Owner": "Bot",
+    "Trigger": "Action delivered/executed"
+  },
+  {
+    "From_Status": "WAITING_FOR_VALIDATION_1",
+    "To_Status": "RESOLVED_PENDING_CONFIRMATION",
+    "Owner": "User/Tool",
+    "Trigger": "Success confirmed"
+  },
+  {
+    "From_Status": "WAITING_FOR_VALIDATION_1",
+    "To_Status": "ATTEMPT_2",
+    "Owner": "Bot",
+    "Trigger": "Failure or different error after re-retrieval"
+  },
+  {
+    "From_Status": "ATTEMPT_2",
+    "To_Status": "WAITING_FOR_VALIDATION_2",
+    "Owner": "Bot",
+    "Trigger": "Alternative action completed"
+  },
+  {
+    "From_Status": "WAITING_FOR_VALIDATION_2",
+    "To_Status": "RESOLVED_PENDING_CONFIRMATION",
+    "Owner": "User/Tool",
+    "Trigger": "Success confirmed"
+  },
+  {
+    "From_Status": "WAITING_FOR_VALIDATION_2",
+    "To_Status": "ESCALATION_QUEUED",
+    "Owner": "Bot",
+    "Trigger": "Second supported attempt failed"
+  },
+  {
+    "From_Status": "ESCALATION_QUEUED",
+    "To_Status": "HUMAN_ASSIGNED",
+    "Owner": "Queue manager",
+    "Trigger": "Human accepts"
+  },
+  {
+    "From_Status": "HUMAN_ASSIGNED",
+    "To_Status": "HUMAN_IN_PROGRESS",
+    "Owner": "Human",
+    "Trigger": "Takeover"
+  },
+  {
+    "From_Status": "HUMAN_IN_PROGRESS",
+    "To_Status": "RESOLVED_PENDING_CONFIRMATION",
+    "Owner": "Human",
+    "Trigger": "Fix applied"
+  },
+  {
+    "From_Status": "RESOLVED_PENDING_CONFIRMATION",
+    "To_Status": "RESOLVED",
+    "Owner": "User",
+    "Trigger": "Closure confirmed"
+  },
+  {
+    "From_Status": "RESOLVED_PENDING_CONFIRMATION",
+    "To_Status": "REOPENED",
+    "Owner": "User",
+    "Trigger": "Issue recurs"
+  },
+  {
+    "From_Status": "REOPENED",
+    "To_Status": "COLLECTING_INFORMATION",
+    "Owner": "Bot",
+    "Trigger": "Re-triage"
+  }
+]

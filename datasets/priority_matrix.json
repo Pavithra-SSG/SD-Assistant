@@ -1,0 +1,98 @@
+[
+  {
+    "Impact": "Extensive",
+    "Urgency": "Critical",
+    "Computed_Priority": "P1",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Extensive",
+    "Urgency": "High",
+    "Computed_Priority": "P1",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Extensive",
+    "Urgency": "Medium",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Extensive",
+    "Urgency": "Low",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Significant",
+    "Urgency": "Critical",
+    "Computed_Priority": "P1",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Significant",
+    "Urgency": "High",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Significant",
+    "Urgency": "Medium",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Significant",
+    "Urgency": "Low",
+    "Computed_Priority": "P3",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Moderate",
+    "Urgency": "Critical",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Moderate",
+    "Urgency": "High",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Moderate",
+    "Urgency": "Medium",
+    "Computed_Priority": "P3",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Moderate",
+    "Urgency": "Low",
+    "Computed_Priority": "P3",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Limited",
+    "Urgency": "Critical",
+    "Computed_Priority": "P2",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Limited",
+    "Urgency": "High",
+    "Computed_Priority": "P3",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Limited",
+    "Urgency": "Medium",
+    "Computed_Priority": "P3",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  },
+  {
+    "Impact": "Limited",
+    "Urgency": "Low",
+    "Computed_Priority": "P4",
+    "Rule": "System computed; user-stated priority is retained for audit but cannot override."
+  }
+]

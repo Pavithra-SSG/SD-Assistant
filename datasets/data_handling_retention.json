@@ -1,0 +1,66 @@
+[
+  {
+    "Data_Type": "Conversation text",
+    "Classification": "Internal/Restricted",
+    "Stored": "Yes",
+    "Access": "User+assigned support",
+    "Retention": "90 days suggested for synthetic demo; production owner decides",
+    "Redaction": "Secret/PII detection and masking"
+  },
+  {
+    "Data_Type": "OTP/password/recovery code",
+    "Classification": "Secret",
+    "Stored": "No",
+    "Access": "Nobody in bot/log",
+    "Retention": "Do not store",
+    "Redaction": "Block/mask immediately"
+  },
+  {
+    "Data_Type": "Verification result",
+    "Classification": "Restricted",
+    "Stored": "Yes",
+    "Access": "Identity-authorized support only",
+    "Retention": "Per security policy",
+    "Redaction": "Store status/reference, not secret"
+  },
+  {
+    "Data_Type": "Attachments",
+    "Classification": "Restricted",
+    "Stored": "Conditional",
+    "Access": "Assigned resolver/SOC",
+    "Retention": "Per ticket/security policy",
+    "Redaction": "Malware scan; safe link; redact"
+  },
+  {
+    "Data_Type": "Tool result",
+    "Classification": "Restricted",
+    "Stored": "Yes, redacted",
+    "Access": "Assigned resolver",
+    "Retention": "Per audit policy",
+    "Redaction": "Remove secrets/tokens"
+  },
+  {
+    "Data_Type": "Human private note",
+    "Classification": "Restricted",
+    "Stored": "Yes",
+    "Access": "Authorized support only",
+    "Retention": "Per ticket policy",
+    "Redaction": "Never show to user"
+  },
+  {
+    "Data_Type": "Security evidence",
+    "Classification": "Highly Restricted",
+    "Stored": "Yes",
+    "Access": "SOC only where possible",
+    "Retention": "Security retention policy",
+    "Redaction": "Minimize and redact"
+  },
+  {
+    "Data_Type": "Metrics",
+    "Classification": "Aggregated",
+    "Stored": "Yes",
+    "Access": "Product owners",
+    "Retention": "Longer if anonymized",
+    "Redaction": "De-identify"
+  }
+]

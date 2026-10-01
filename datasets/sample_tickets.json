@@ -1,0 +1,74 @@
+[
+  {
+    "Ticket_ID": "TKT-2001",
+    "Scenario": "Forgot password, registered authenticator still works",
+    "Category_ID": "CAT-01",
+    "Verification": "V2",
+    "Expected_Path": "Self-service or verified reset",
+    "Escalate": "No",
+    "Handoff_Focus": "Full history retained"
+  },
+  {
+    "Ticket_ID": "TKT-2002",
+    "Scenario": "Forgot password and all MFA methods unavailable",
+    "Category_ID": "CAT-01",
+    "Verification": "V3",
+    "Expected_Path": "Specialist recovery handoff",
+    "Escalate": "Yes",
+    "Handoff_Focus": "No knowledge-only reset"
+  },
+  {
+    "Ticket_ID": "TKT-2003",
+    "Scenario": "VPN error 809, one user",
+    "Category_ID": "CAT-02",
+    "Verification": "V1",
+    "Expected_Path": "Two attempts then conditional handoff",
+    "Escalate": "Conditional",
+    "Handoff_Focus": "Error, OS, gateway, attempts"
+  },
+  {
+    "Ticket_ID": "TKT-2004",
+    "Scenario": "Laptop battery swelling",
+    "Category_ID": "CAT-04",
+    "Verification": "V1",
+    "Expected_Path": "Stop use and urgent hardware handoff",
+    "Escalate": "Yes",
+    "Handoff_Focus": "Safety flag and asset"
+  },
+  {
+    "Ticket_ID": "TKT-2005",
+    "Scenario": "Salesforce admin role request",
+    "Category_ID": "CAT-07",
+    "Verification": "V4",
+    "Expected_Path": "Approval handoff",
+    "Escalate": "Yes",
+    "Handoff_Focus": "Role, owner, approval"
+  },
+  {
+    "Ticket_ID": "TKT-2006",
+    "Scenario": "Clicked phishing link and entered credentials",
+    "Category_ID": "CAT-09",
+    "Verification": "V3",
+    "Expected_Path": "Contain and SOC handoff",
+    "Escalate": "Yes",
+    "Handoff_Focus": "Timeline, exposure, containment"
+  },
+  {
+    "Ticket_ID": "TKT-2007",
+    "Scenario": "Teams microphone issue",
+    "Category_ID": "CAT-11",
+    "Verification": "V1",
+    "Expected_Path": "Two safe attempts",
+    "Escalate": "No",
+    "Handoff_Focus": "Device tests and outcomes"
+  },
+  {
+    "Ticket_ID": "TKT-2008",
+    "Scenario": "Lost corporate phone, wipe request",
+    "Category_ID": "CAT-12",
+    "Verification": "V4",
+    "Expected_Path": "Security approval and MDM handoff",
+    "Escalate": "Yes",
+    "Handoff_Focus": "Identity result, device, last seen"
+  }
+]

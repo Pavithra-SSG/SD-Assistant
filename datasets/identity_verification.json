@@ -1,0 +1,44 @@
+[
+  {
+    "Level": "V0",
+    "Use_Case": "No identity step",
+    "Required_For": "Informational advice with no account/device change",
+    "Accepted_Evidence_or_Service": "Existing signed-in session context only",
+    "Not_Accepted_As_Sole_Proof": "Do not expose private account data"
+  },
+  {
+    "Level": "V1",
+    "Use_Case": "Session assurance",
+    "Required_For": "View ticket status, asset association, non-sensitive checks",
+    "Accepted_Evidence_or_Service": "Authenticated corporate session; token/session binding",
+    "Not_Accepted_As_Sole_Proof": "Employee ID or email alone is not verification"
+  },
+  {
+    "Level": "V2",
+    "Use_Case": "Step-up verification",
+    "Required_For": "Password reset, account unlock, MFA re-enrollment, phone/authenticator change",
+    "Accepted_Evidence_or_Service": "IdP challenge using a previously registered authenticator, passkey, security key, or corporate SSO reauthentication",
+    "Not_Accepted_As_Sole_Proof": "No manager name, phone digits, start date, or last login are context only, not proof"
+  },
+  {
+    "Level": "V3",
+    "Use_Case": "High-risk recovery",
+    "Required_For": "No registered factor, lost all factors, suspicious activity, account takeover indicators",
+    "Accepted_Evidence_or_Service": "Dedicated identity recovery service or supervised human identity-proofing workflow with approval and audit",
+    "Not_Accepted_As_Sole_Proof": "Bot must not improvise questions or accept screenshots of IDs in chat"
+  },
+  {
+    "Level": "V4",
+    "Use_Case": "Privileged/irreversible",
+    "Required_For": "Privileged access, MFA bypass, service account secret, device wipe, external sensitive access",
+    "Accepted_Evidence_or_Service": "V2/V3 plus policy approval, least privilege, time limit, and second-person authorization where configured",
+    "Not_Accepted_As_Sole_Proof": "Bot cannot approve or execute solely from request"
+  },
+  {
+    "Level": "RESULT",
+    "Use_Case": "Verification result contract",
+    "Required_For": "All sensitive flows",
+    "Accepted_Evidence_or_Service": "verification_id, status, assurance_level, method_family, timestamp, expiry, risk_flags, verifier_system",
+    "Not_Accepted_As_Sole_Proof": "Never store secret, OTP value, recovery code, password, biometric, or full authenticator"
+  }
+]

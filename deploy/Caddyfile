@@ -1,0 +1,20 @@
+# HTTPS in front of the Streamlit UI. The API is never exposed: the UI calls it on the internal network.
+#   SITE_ADDRESS  the host name people type, e.g. servicedesk.company.com
+#   CADDY_TLS     "internal"  → Caddy's own certificate authority (private network; install its root cert
+#                               on company devices, see docs/DEPLOY.md), or
+#                 an e-mail   → a free public certificate from Let's Encrypt (needs public DNS + ports 80/443)
+{$SITE_ADDRESS} {
+	tls {$CADDY_TLS}
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	reverse_proxy ui:8501
+}

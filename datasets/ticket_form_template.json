@@ -1,0 +1,98 @@
+[
+  {
+    "Stage": "1",
+    "Field": "Requester",
+    "Options_or_Source": "Auto-filled from authenticated session",
+    "Control": "read_only",
+    "Required": "Yes",
+    "Rule": "Do not let user select another employee unless delegated workflow exists."
+  },
+  {
+    "Stage": "2",
+    "Field": "Category",
+    "Options_or_Source": "12 service categories plus Not sure",
+    "Control": "dropdown",
+    "Required": "Yes",
+    "Rule": "Loads conditional fields."
+  },
+  {
+    "Stage": "2",
+    "Field": "Issue type",
+    "Options_or_Source": "Category-specific choices plus Other",
+    "Control": "radio/dropdown",
+    "Required": "Yes",
+    "Rule": "The form remains trackable but flexible."
+  },
+  {
+    "Stage": "2",
+    "Field": "Short description",
+    "Options_or_Source": "One-sentence summary",
+    "Control": "text",
+    "Required": "Yes",
+    "Rule": "No secrets."
+  },
+  {
+    "Stage": "2",
+    "Field": "Impact",
+    "Options_or_Source": "Only me|Several users|Department/site|Company-wide|Unknown",
+    "Control": "choice",
+    "Required": "Yes",
+    "Rule": "System computes priority; user cannot set final priority."
+  },
+  {
+    "Stage": "2",
+    "Field": "Workaround",
+    "Options_or_Source": "No workaround|Partial workaround|Work can continue",
+    "Control": "choice",
+    "Required": "Yes",
+    "Rule": "Supports urgency."
+  },
+  {
+    "Stage": "3",
+    "Field": "Exact error",
+    "Options_or_Source": "Error text with secret warning",
+    "Control": "textarea",
+    "Required": "Conditional",
+    "Rule": "Redact token, password, OTP and personal data."
+  },
+  {
+    "Stage": "3",
+    "Field": "Dynamic details",
+    "Options_or_Source": "Loaded from Dynamic_Form_Fields",
+    "Control": "mixed",
+    "Required": "Conditional",
+    "Rule": "Only request fields needed for selected issue."
+  },
+  {
+    "Stage": "3",
+    "Field": "Attachments",
+    "Options_or_Source": "Screenshot/log",
+    "Control": "file",
+    "Required": "Optional",
+    "Rule": "Warn user to redact secrets; malware scanning in production."
+  },
+  {
+    "Stage": "4",
+    "Field": "Preferred contact",
+    "Options_or_Source": "In-app|Corporate email|Corporate phone",
+    "Control": "choice",
+    "Required": "Optional",
+    "Rule": "Use verified corporate channel only."
+  },
+  {
+    "Stage": "4",
+    "Field": "Review",
+    "Options_or_Source": "Display generated summary and computed priority",
+    "Control": "review",
+    "Required": "Yes",
+    "Rule": "User confirms facts, not priority."
+  },
+  {
+    "Stage": "4",
+    "Field": "Submit",
+    "Options_or_Source": "Create ticket and start agent workflow",
+    "Control": "button",
+    "Required": "Yes",
+    "Rule": "Generate correlation ID and audit event."
+  }
+]

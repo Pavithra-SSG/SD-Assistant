@@ -1,0 +1,98 @@
+[
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "High",
+    "Security_and_Automation_Boundary": "Registered authenticator or corporate SSO reauthentication required before reset/unlock."
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "No identity step for advice; authenticated session required for group/certificate changes."
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Conditional",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Approved catalog and entitlement only; purchases, non-standard software, and admin rights require approval."
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Partial",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Safe non-invasive diagnostics only; safety, damage, repair, replacement, or logistics require handoff."
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Conditional",
+    "Risk_Level": "Critical",
+    "Security_and_Automation_Boundary": "Step-up verification using a still-registered factor or an approved recovery service. No knowledge-only verification."
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Advice is low risk; mailbox permission or quota changes require authenticated admin tool and policy."
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Conditional",
+    "Risk_Level": "High",
+    "Security_and_Automation_Boundary": "Standard pre-approved access only; privileged, external, sensitive, or SoD-relevant access requires approval."
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Safe endpoint diagnostics only; multiple-user/site failures become incidents."
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Mandatory_Handoff": "Yes",
+    "Bot_Can_Resolve": "No",
+    "Risk_Level": "Critical",
+    "Security_and_Automation_Boundary": "Bot never attempts resolution; immediate SOC handoff with evidence preserved; no containment without approval."
+  },
+  {
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Safe queue/spooler diagnostics only; physical hardware faults route to facilities/IT ops."
+  },
+  {
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Mandatory_Handoff": "No",
+    "Bot_Can_Resolve": "Yes",
+    "Risk_Level": "Normal",
+    "Security_and_Automation_Boundary": "Client-side cache/permission fixes only; platform-wide outages become incidents."
+  },
+  {
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Mandatory_Handoff": "Conditional",
+    "Bot_Can_Resolve": "Partial",
+    "Risk_Level": "High",
+    "Security_and_Automation_Boundary": "Standard enrollment/profile fixes only; lost device or wipe requires verification and security approval."
+  }
+]

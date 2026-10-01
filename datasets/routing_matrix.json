@@ -1,0 +1,98 @@
+[
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Primary_Queue": "Identity Support",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Primary_Queue": "Network Remote Access",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Primary_Queue": "Software Asset Management",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Primary_Queue": "End User Hardware",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Primary_Queue": "Identity Security",
+    "Fallback_or_Approval_Queue": "Security Operations",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Primary_Queue": "Messaging Support",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Primary_Queue": "Application Access",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Primary_Queue": "Network Operations",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Primary_Queue": "Security Operations",
+    "Fallback_or_Approval_Queue": "Security Operations",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Primary_Queue": "Workplace/Print Support",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Primary_Queue": "Collaboration Support",
+    "Fallback_or_Approval_Queue": "Service Desk Duty Manager",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  },
+  {
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Primary_Queue": "Mobile Device Management",
+    "Fallback_or_Approval_Queue": "Security Operations",
+    "After_Hours_Rule": "24x7 for P1/security; otherwise business-hours queue",
+    "Required_Context": "Complete handoff package"
+  }
+]

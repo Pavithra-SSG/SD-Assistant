@@ -1,0 +1,82 @@
+[
+  {
+    "Action_ID": "ACT-01",
+    "Action": "Standard password reset/unlock",
+    "Verification": "V2",
+    "Approval_Required": "No",
+    "Approver_or_Policy": "Identity tool policy",
+    "Automation_Boundary": "Bot may execute after VERIFIED and risk-clear"
+  },
+  {
+    "Action_ID": "ACT-02",
+    "Action": "MFA re-enrollment",
+    "Verification": "V2/V3",
+    "Approval_Required": "Conditional",
+    "Approver_or_Policy": "Identity recovery policy",
+    "Automation_Boundary": "V3 routes to supervised recovery"
+  },
+  {
+    "Action_ID": "ACT-03",
+    "Action": "Standard approved license",
+    "Verification": "V1/V2",
+    "Approval_Required": "Conditional",
+    "Approver_or_Policy": "Entitlement/catalog",
+    "Automation_Boundary": "Only pre-approved scope"
+  },
+  {
+    "Action_ID": "ACT-04",
+    "Action": "Non-standard software/local admin",
+    "Verification": "V2",
+    "Approval_Required": "Yes",
+    "Approver_or_Policy": "Manager + Security/Software review",
+    "Automation_Boundary": "No bot approval"
+  },
+  {
+    "Action_ID": "ACT-05",
+    "Action": "Standard application role",
+    "Verification": "V2",
+    "Approval_Required": "Conditional",
+    "Approver_or_Policy": "Access matrix/app owner",
+    "Automation_Boundary": "Only catalogued low-risk role"
+  },
+  {
+    "Action_ID": "ACT-06",
+    "Action": "Privileged/admin role",
+    "Verification": "V4",
+    "Approval_Required": "Yes",
+    "Approver_or_Policy": "Manager + app owner + security/PAM",
+    "Automation_Boundary": "Time-bound least privilege"
+  },
+  {
+    "Action_ID": "ACT-07",
+    "Action": "Guest/external access",
+    "Verification": "V4",
+    "Approval_Required": "Yes",
+    "Approver_or_Policy": "Sponsor + owner + security where sensitive",
+    "Automation_Boundary": "Expiry mandatory"
+  },
+  {
+    "Action_ID": "ACT-08",
+    "Action": "Device wipe",
+    "Verification": "V4",
+    "Approval_Required": "Yes",
+    "Approver_or_Policy": "Security/MDM authorization",
+    "Automation_Boundary": "Irreversible action"
+  },
+  {
+    "Action_ID": "ACT-09",
+    "Action": "Security containment",
+    "Verification": "V2/V3",
+    "Approval_Required": "Policy controlled",
+    "Approver_or_Policy": "SOC runbook",
+    "Automation_Boundary": "Only explicit approved containment"
+  },
+  {
+    "Action_ID": "ACT-10",
+    "Action": "Hardware replacement",
+    "Verification": "V1",
+    "Approval_Required": "Conditional",
+    "Approver_or_Policy": "Entitlement/asset/warranty",
+    "Automation_Boundary": "Human/logistics workflow"
+  }
+]

@@ -1,0 +1,21 @@
+.env
+*.db
+__pycache__/
+.venv/
+.jwt_secret
+eval_runs/
+.env.production
+backups/
+*-temporary-passwords.csv
+.pytest_cache/
+attachments/
+
+# local tooling and test artefacts, not part of the app
+.agent/
+.agents/
+.claude/
+.ralphy/
+.playwright-mcp/
+*.log
+.DS_Store
+Thumbs.db

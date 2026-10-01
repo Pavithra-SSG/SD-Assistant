@@ -1,0 +1,34 @@
+[
+  {
+    "Area": "Identity verification",
+    "Correction": "Removed employee facts and phone digits as identity proof; made them context only."
+  },
+  {
+    "Area": "Sensitive actions",
+    "Correction": "Added V0-V4 assurance levels and external verification result contract."
+  },
+  {
+    "Area": "Secrets",
+    "Correction": "Prohibited collection/storage of OTPs, passwords, recovery codes, biometrics, and raw authenticator details."
+  },
+  {
+    "Area": "Human handoff",
+    "Correction": "Added complete event log and handoff package so human agents can continue without re-questioning."
+  },
+  {
+    "Area": "User interface",
+    "Correction": "Added hybrid guided chat and dynamic ticket template with structured options plus Other/free text."
+  },
+  {
+    "Area": "Resolution",
+    "Correction": "Preserved two-attempt model; added exact functional validation and mandatory policy paths."
+  },
+  {
+    "Area": "RAG security",
+    "Correction": "Added untrusted content and approved-tool boundaries."
+  },
+  {
+    "Area": "Audit",
+    "Correction": "Added immutable event schema, decision reasons, redacted tool results, correlation IDs, and optional hash chain."
+  }
+]

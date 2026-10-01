@@ -1,0 +1,142 @@
+[
+  {
+    "Tool_ID": "TOOL-01",
+    "Tool_Name": "Search KB",
+    "Categories": "All",
+    "Risk": "Low",
+    "Verification": "V0/V1",
+    "Approval": "No",
+    "Required_Inputs": "query, category, filters",
+    "Output_Schema": "article_ids, scores"
+  },
+  {
+    "Tool_ID": "TOOL-02",
+    "Tool_Name": "Check service health",
+    "Categories": "VPN, Network, Email, Collaboration",
+    "Risk": "Low",
+    "Verification": "V1",
+    "Approval": "No",
+    "Required_Inputs": "service, region",
+    "Output_Schema": "status, incident_id"
+  },
+  {
+    "Tool_ID": "TOOL-03",
+    "Tool_Name": "Identity verification",
+    "Categories": "Password, MFA, Access, Wipe",
+    "Risk": "Critical",
+    "Verification": "V2 VERIFIED",
+    "Approval": "No",
+    "Required_Inputs": "requester, target, action, ticket, session",
+    "Output_Schema": "verification_id, status"
+  },
+  {
+    "Tool_ID": "TOOL-04",
+    "Tool_Name": "Password reset",
+    "Categories": "Password",
+    "Risk": "High",
+    "Verification": "V2 VERIFIED",
+    "Approval": "No",
+    "Required_Inputs": "target, verification_id, reason",
+    "Output_Schema": "status, correlation_id"
+  },
+  {
+    "Tool_ID": "TOOL-05",
+    "Tool_Name": "Account unlock",
+    "Categories": "Password",
+    "Risk": "High",
+    "Verification": "V2",
+    "Approval": "No",
+    "Required_Inputs": "target, verification_id",
+    "Output_Schema": "status, correlation_id"
+  },
+  {
+    "Tool_ID": "TOOL-06",
+    "Tool_Name": "MFA reset/re-enroll",
+    "Categories": "MFA",
+    "Risk": "Critical",
+    "Verification": "V2/V3",
+    "Approval": "Conditional",
+    "Required_Inputs": "target, verification_id, approved_method",
+    "Output_Schema": "status, correlation_id"
+  },
+  {
+    "Tool_ID": "TOOL-07",
+    "Tool_Name": "License inventory/assign",
+    "Categories": "Software",
+    "Risk": "Medium",
+    "Verification": "V1/V2",
+    "Approval": "Catalog policy",
+    "Required_Inputs": "product, edition, user",
+    "Output_Schema": "available, assigned"
+  },
+  {
+    "Tool_ID": "TOOL-08",
+    "Tool_Name": "Check group/role",
+    "Categories": "Access",
+    "Risk": "Medium",
+    "Verification": "V1",
+    "Approval": "No",
+    "Required_Inputs": "user, app, role",
+    "Output_Schema": "user, app, role, approval_ref"
+  },
+  {
+    "Tool_ID": "TOOL-09",
+    "Tool_Name": "Grant standard role",
+    "Categories": "Access",
+    "Risk": "High",
+    "Verification": "V1",
+    "Approval": "Access matrix",
+    "Required_Inputs": "user, app, role, approval_ref",
+    "Output_Schema": "status, correlation_id"
+  },
+  {
+    "Tool_ID": "TOOL-10",
+    "Tool_Name": "Asset lookup",
+    "Categories": "Hardware, Mobile",
+    "Risk": "Low",
+    "Verification": "V1",
+    "Approval": "No",
+    "Required_Inputs": "asset_tag or requester",
+    "Output_Schema": "model, warranty_status"
+  },
+  {
+    "Tool_ID": "TOOL-11",
+    "Tool_Name": "Create/update ticket",
+    "Categories": "All",
+    "Risk": "Low",
+    "Verification": "V1",
+    "Approval": "No",
+    "Required_Inputs": "handoff_package",
+    "Output_Schema": "ticket_id, status"
+  },
+  {
+    "Tool_ID": "TOOL-12",
+    "Tool_Name": "Attachment scan",
+    "Categories": "All",
+    "Risk": "Medium",
+    "Verification": "V1",
+    "Approval": "No",
+    "Required_Inputs": "file_reference, hash",
+    "Output_Schema": "scan_status, safe_flag"
+  },
+  {
+    "Tool_ID": "TOOL-13",
+    "Tool_Name": "MDM status/sync",
+    "Categories": "Mobile",
+    "Risk": "High",
+    "Verification": "V2 for changes",
+    "Approval": "Policy",
+    "Required_Inputs": "device_id, action",
+    "Output_Schema": "compliance_status"
+  },
+  {
+    "Tool_ID": "TOOL-14",
+    "Tool_Name": "Remote wipe request",
+    "Categories": "Mobile/Security",
+    "Risk": "Critical",
+    "Verification": "V4",
+    "Approval": "Yes",
+    "Required_Inputs": "device_id, verification_id, approval_ref",
+    "Output_Schema": "request_id, status"
+  }
+]

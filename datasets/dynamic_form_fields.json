@@ -1,0 +1,372 @@
+[
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Field_Name": "employee_id",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "EMP####",
+    "Help_Text": "Your employee ID for identity verification",
+    "Purpose": "Identity verification before reset"
+  },
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Field_Name": "account_username",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "Usually same as email prefix",
+    "Help_Text": "Username of the locked/reset account",
+    "Purpose": "Target account"
+  },
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Field_Name": "last_successful_login",
+    "UI_Control": "date",
+    "Required": "No",
+    "Options_or_Source": "YYYY-MM-DD",
+    "Help_Text": "When did you last log in successfully?",
+    "Purpose": "Helps detect compromise"
+  },
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Field_Name": "mfa_still_working",
+    "UI_Control": "yes_no",
+    "Required": "Yes",
+    "Options_or_Source": "Yes|No",
+    "Help_Text": "Is MFA still working on your device?",
+    "Purpose": "Decides reset vs MFA path"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Field_Name": "error_message",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "Paste exact error text",
+    "Help_Text": "Exact error shown by VPN client",
+    "Purpose": "Retrieval matching"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Field_Name": "os_version",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Windows 11|Windows 10|macOS Sonoma|macOS Ventura|Ubuntu|Other",
+    "Help_Text": "Your operating system",
+    "Purpose": "OS-specific steps"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Field_Name": "vpn_client_version",
+    "UI_Control": "text",
+    "Required": "No",
+    "Options_or_Source": "e.g. 5.2.1",
+    "Help_Text": "Version of the VPN client",
+    "Purpose": "Known bug matching"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Field_Name": "last_successful_connect",
+    "UI_Control": "date",
+    "Required": "No",
+    "Options_or_Source": "YYYY-MM-DD",
+    "Help_Text": "Last time VPN worked",
+    "Purpose": "Recency for cert issues"
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Field_Name": "location_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Home|Office|Travel/Hotel|Cafe/Public",
+    "Help_Text": "Where are you connecting from?",
+    "Purpose": "Network path diagnosis"
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Field_Name": "software_name",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "e.g. Adobe Photoshop, Tableau",
+    "Help_Text": "Exact software name",
+    "Purpose": "License inventory lookup"
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Field_Name": "business_justification",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "Why do you need this?",
+    "Help_Text": "Required for approval workflow",
+    "Purpose": "Approval routing"
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Field_Name": "preferred_version",
+    "UI_Control": "text",
+    "Required": "No",
+    "Options_or_Source": "Latest or specific version",
+    "Help_Text": "Version preference",
+    "Purpose": "Install targeting"
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Field_Name": "asset_tag",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "LT-##### or MON-#####",
+    "Help_Text": "Asset tag sticker on device",
+    "Purpose": "Asset system lookup"
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Field_Name": "device_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Laptop|Monitor|Keyboard|Mouse|Dock|Headset|Other",
+    "Help_Text": "Type of hardware",
+    "Purpose": "Routing to correct team"
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Field_Name": "symptoms",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "Describe the problem",
+    "Help_Text": "Detailed symptoms",
+    "Purpose": "KB matching + tech diagnosis"
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Field_Name": "location",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "Floor / Desk / City",
+    "Help_Text": "Where is the device physically?",
+    "Purpose": "Logistics for replacement"
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Field_Name": "mfa_method",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Authenticator App|SMS|Hardware Key|Email OTP",
+    "Help_Text": "Which MFA method fails?",
+    "Purpose": "Reset path selection"
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Field_Name": "device_change",
+    "UI_Control": "yes_no",
+    "Required": "Yes",
+    "Options_or_Source": "Yes|No",
+    "Help_Text": "Did you recently change phone/device?",
+    "Purpose": "Common root cause"
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Field_Name": "backup_codes_available",
+    "UI_Control": "yes_no",
+    "Required": "No",
+    "Options_or_Source": "Yes|No",
+    "Help_Text": "Do you still have backup codes?",
+    "Purpose": "Self-recovery option"
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Field_Name": "client",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Outlook Desktop|Outlook Web|Mobile App|Other",
+    "Help_Text": "Which email client?",
+    "Purpose": "Client-specific steps"
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Field_Name": "error_or_symptom",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "Describe what happens",
+    "Help_Text": "Exact behavior or error",
+    "Purpose": "Retrieval"
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Field_Name": "mailbox_size_known",
+    "UI_Control": "yes_no",
+    "Required": "No",
+    "Options_or_Source": "Yes|No",
+    "Help_Text": "Do you know if mailbox is near quota?",
+    "Purpose": "Quota check trigger"
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Field_Name": "application_name",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "e.g. Salesforce, Jira, Confluence",
+    "Help_Text": "Which application?",
+    "Purpose": "Access matrix lookup"
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Field_Name": "requested_role",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "e.g. Editor, Viewer, Admin",
+    "Help_Text": "What level of access?",
+    "Purpose": "Privilege check"
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Field_Name": "manager_approval",
+    "UI_Control": "yes_no",
+    "Required": "No",
+    "Options_or_Source": "Yes|No",
+    "Help_Text": "Has manager already approved?",
+    "Purpose": "Workflow acceleration"
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Field_Name": "connection_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Office WiFi|Office LAN|Home WiFi|Mobile Hotspot",
+    "Help_Text": "How are you connected?",
+    "Purpose": "Path diagnosis"
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Field_Name": "affected_sites",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "Which sites/apps fail?",
+    "Help_Text": "Scope of issue",
+    "Purpose": "Known-issue matching"
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Field_Name": "others_affected",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Just me|My desk mates|Whole floor|Don't know",
+    "Help_Text": "Impact scope",
+    "Purpose": "Priority + known outage check"
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Field_Name": "incident_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Phishing Email|Suspicious Link|Malware Alert|Data Exposure|Other",
+    "Help_Text": "Type of security concern",
+    "Purpose": "SOC routing"
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Field_Name": "email_headers_or_screenshot",
+    "UI_Control": "file",
+    "Required": "No",
+    "Options_or_Source": "Attach if possible",
+    "Help_Text": "Evidence for investigation",
+    "Purpose": "Forensic value"
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Field_Name": "actions_already_taken",
+    "UI_Control": "textarea",
+    "Required": "Yes",
+    "Options_or_Source": "What have you done so far?",
+    "Help_Text": "Containment status",
+    "Purpose": "Avoid duplicate actions"
+  },
+  {
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Field_Name": "printer_name_or_id",
+    "UI_Control": "text",
+    "Required": "Yes",
+    "Options_or_Source": "e.g. Floor3-HP-01",
+    "Help_Text": "Printer identifier",
+    "Purpose": "Queue / status check"
+  },
+  {
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Field_Name": "error_code",
+    "UI_Control": "text",
+    "Required": "No",
+    "Options_or_Source": "If shown on printer/screen",
+    "Help_Text": "Exact error",
+    "Purpose": "KB matching"
+  },
+  {
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Field_Name": "tool_name",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Microsoft Teams|Zoom|Slack|Google Meet|Other",
+    "Help_Text": "Which tool?",
+    "Purpose": "Tool-specific KB"
+  },
+  {
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Field_Name": "issue_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Can't Join|Audio|Video|Screen Share|Chat|Other",
+    "Help_Text": "Main problem area",
+    "Purpose": "Targeted steps"
+  },
+  {
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Field_Name": "device_os",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "iOS|Android|Other",
+    "Help_Text": "Phone OS",
+    "Purpose": "MDM profile steps"
+  },
+  {
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Field_Name": "issue_type",
+    "UI_Control": "dropdown",
+    "Required": "Yes",
+    "Options_or_Source": "Enrollment Fail|App Install|Profile Missing|Lost Device|Wipe Request",
+    "Help_Text": "What do you need?",
+    "Purpose": "Risk + process selection"
+  }
+]

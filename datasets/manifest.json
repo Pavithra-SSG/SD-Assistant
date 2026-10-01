@@ -1,0 +1,38 @@
+{
+  "package": "ServiceDesk Agentic RAG - Synthetic Dataset Bundle",
+  "source": "Reconstructed from screen-recording of ServiceDesk_Training_Data_Fully_Corrected.xlsx (company laptop, no file transfer available)",
+  "counts": {
+    "categories": 12,
+    "subcategories": 72,
+    "sla_policy": 48,
+    "status_lifecycle": 22,
+    "routing_matrix": 12,
+    "priority_matrix": 16,
+    "approval_action_matrix": 10,
+    "tool_catalog": 14,
+    "dynamic_form_fields": 37,
+    "employees": 50,
+    "identity_verification": 6,
+    "agent_playbooks": 12,
+    "kb_articles": 31,
+    "guided_chat_flows": 8,
+    "ticket_form_template": 12,
+    "conversation_event_schema": 16,
+    "human_handoff_package": 10,
+    "sample_tickets": 8,
+    "decision_rules": 9,
+    "security_test_cases": 10,
+    "data_quality_log": 8,
+    "prompt_model_contracts": 7,
+    "data_handling_retention": 8,
+    "human_agent_workspace": 10,
+    "evaluation_tickets": 8,
+    "metrics_acceptance": 10
+  },
+  "notes": [
+    "All data is synthetic - no real employees, tickets, or company data.",
+    "kb_articles: KB-001/KB-002 transcribed exactly; KB-003+ reconstructed to give every category coverage - review before using verbatim in a demo.",
+    "evaluation_tickets: blank scoring template, not transcribed (tab was never opened in the recording).",
+    "See the accompanying Excel workbook's row-1 sheet notes for exact/reconstructed provenance per sheet."
+  ]
+}

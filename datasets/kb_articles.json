@@ -1,0 +1,250 @@
+[
+  {
+    "KB_ID": "KB-001",
+    "Category_ID": "CAT-01",
+    "Title": "Password Reset - Self Service Portal",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1: step up only before account, device, or entitlement change",
+    "Resolution_Steps": "1. Confirm scope, known boundary and requirements. 2. Retrieve the best evidence. 3. Attempt 1: use the self-service portal (OTP to registered email/phone, complexity rules apply). 4. Validate the exact functional test. 5. Attempt 2: use a different supported path if Attempt 1 fails. 6. Validate again. 7. Resolve only on complete evidence."
+  },
+  {
+    "KB_ID": "KB-002",
+    "Category_ID": "CAT-01",
+    "Title": "Assisted Password Reset",
+    "Handling_Mode": "Verified Tool Action",
+    "Verification_Level": "V2; V3 if no registered factor or risk flags exist",
+    "Resolution_Steps": "1. Check account risk level. 2. Call identity service for V2 verification. 3. If VERIFIED, execute least-privilege AD reset via TOOL-04. 4. Test a fresh authentication. 5. If unsuccessful, use a different supported path; otherwise hand off to Identity Support."
+  },
+  {
+    "KB_ID": "KB-003",
+    "Category_ID": "CAT-01",
+    "Title": "Account Unlock - Failed Login Lockout",
+    "Handling_Mode": "Verified Tool Action",
+    "Verification_Level": "V2",
+    "Resolution_Steps": "1. Verify identity (V2). 2. Check AD lockout status and source of failed attempts. 3. If single-user lockout, unlock via TOOL-05. 4. Advise password reset if unsure of current one. 5. Log unlock event."
+  },
+  {
+    "KB_ID": "KB-004",
+    "Category_ID": "CAT-01",
+    "Title": "Multiple Failed Resets - Possible Compromise",
+    "Handling_Mode": "Immediate Escalation",
+    "Verification_Level": "V3",
+    "Resolution_Steps": "1. Do not perform another reset. 2. Check recent login locations and failed-attempt sources. 3. Freeze further resets, request MFA reset, and create a Security ticket. 4. Inform user Security will follow up."
+  },
+  {
+    "KB_ID": "KB-005",
+    "Category_ID": "CAT-02",
+    "Title": "VPN Connection Failure - Standard Troubleshooting",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Collect exact error code/message and OS. 2. Check known VPN gateway status via TOOL-02. 3. Attempt 1: clear client cache, restart client, reconnect. 4. Validate connection. 5. Attempt 2: winsock reset (Windows) or reinstall profile, then reconnect. 6. If still failing, collect logs and hand off to Network Remote Access."
+  },
+  {
+    "KB_ID": "KB-006",
+    "Category_ID": "CAT-02",
+    "Title": "VPN Certificate / Trust Error",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Confirm system date/time is correct. 2. Attempt 1: guide user to re-download/re-enroll the VPN certificate profile. 3. Validate connection. 4. Attempt 2: remove old certificate from the store and repair the client. 5. Escalate if the company CA certificate itself is missing."
+  },
+  {
+    "KB_ID": "KB-007",
+    "Category_ID": "CAT-02",
+    "Title": "VPN Frequent Dropouts",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Ask network type (home/office/hotel/hotspot). 2. Attempt 1: update VPN client, disable sleep while connected. 3. Validate stability. 4. Attempt 2: try a different supported network. 5. Escalate with connection logs if drops persist on multiple networks."
+  },
+  {
+    "KB_ID": "KB-008",
+    "Category_ID": "CAT-02",
+    "Title": "New VPN Setup / First-Time Install",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Confirm OS. 2. Attempt 1: guide install from the software portal + profile import + first connect with MFA. 3. Validate access to one internal resource. 4. Attempt 2: repair install if first attempt fails. 5. Escalate if install is blocked by policy."
+  },
+  {
+    "KB_ID": "KB-009",
+    "Category_ID": "CAT-03",
+    "Title": "Request Standard Software License",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1/V2",
+    "Resolution_Steps": "1. Confirm exact software name/edition and business justification. 2. Attempt 1: check catalog entitlement (TOOL-07); if pre-approved and seats available, assign. 3. Validate activation. 4. Attempt 2: reassign from a released seat if the first attempt fails. 5. If no seats or not pre-approved, hand off with a purchase/approval request."
+  },
+  {
+    "KB_ID": "KB-010",
+    "Category_ID": "CAT-03",
+    "Title": "Software Installation via Company Portal",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Direct user to the software portal. 2. Attempt 1: install and reboot if required. 3. Validate the app opens. 4. Attempt 2: repair/reinstall if it fails. 5. Escalate with the error code if it persists."
+  },
+  {
+    "KB_ID": "KB-011",
+    "Category_ID": "CAT-03",
+    "Title": "License Expired / Activation Failed",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1/V2",
+    "Resolution_Steps": "1. Confirm software name and prior working state. 2. Attempt 1: check inventory and reassign if seats available. 3. Validate reactivation. 4. Attempt 2: check renewal status with procurement. 5. Escalate if no seats and no renewal in progress."
+  },
+  {
+    "KB_ID": "KB-012",
+    "Category_ID": "CAT-03",
+    "Title": "Non-Standard / New Software Request",
+    "Handling_Mode": "Policy Check",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Collect software name, vendor, version, justification, estimated users. 2. Explain security/compliance review is required. 3. Create request for Software Review Board / Security. 4. Do not provide install media or local-admin bypass."
+  },
+  {
+    "KB_ID": "KB-013",
+    "Category_ID": "CAT-04",
+    "Title": "Hardware Issue - Mandatory Data Collection",
+    "Handling_Mode": "Data Collection + Handoff",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Collect asset tag (TOOL-10 lookup). 2. Device type, exact symptoms, and when they started. 3. Location (office floor/desk or remote address). 4. Run only safe non-invasive checks (different cable, external monitor test). 5. Hand off to End User Hardware with full structured data; never promise a repair ETA."
+  },
+  {
+    "KB_ID": "KB-014",
+    "Category_ID": "CAT-04",
+    "Title": "Laptop Will Not Power On",
+    "Handling_Mode": "Data Collection + Handoff",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Confirm asset tag and location. 2. Try a different known-good charger if available. 3. Force power off/on once. 4. Note any recent drop or liquid exposure. 5. Always hand off after collection - physical power issues need End User Hardware."
+  },
+  {
+    "KB_ID": "KB-015",
+    "Category_ID": "CAT-04",
+    "Title": "Keyboard / Mouse / Peripheral Fault",
+    "Handling_Mode": "Data Collection + Handoff",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Confirm asset tag, device type, and symptoms. 2. Try a different port/cable if available. 3. Note remote vs on-site location. 4. Hand off for replacement/repair; do not promise a timeline."
+  },
+  {
+    "KB_ID": "KB-016",
+    "Category_ID": "CAT-05",
+    "Title": "New Phone - MFA Re-enrollment",
+    "Handling_Mode": "Verified Tool Action",
+    "Verification_Level": "V2/V3",
+    "Resolution_Steps": "1. Check whether backup codes are available. 2. Call identity service for V2 (or V3 if no registered factor). 3. If VERIFIED, reset MFA via TOOL-06 and guide re-enrollment. 4. Validate a fresh MFA challenge. 5. Escalate to Identity Security if verification fails."
+  },
+  {
+    "KB_ID": "KB-017",
+    "Category_ID": "CAT-05",
+    "Title": "MFA Prompt Not Appearing / Looping",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1/V2",
+    "Resolution_Steps": "1. Confirm MFA method and check service health (TOOL-02). 2. Attempt 1: open authenticator app for a pending push, or check TOTP time sync. 3. Validate. 4. Attempt 2: use a backup code then re-enroll. 5. Escalate if the MFA service itself is degraded."
+  },
+  {
+    "KB_ID": "KB-018",
+    "Category_ID": "CAT-06",
+    "Title": "Outlook Stuck - Cannot Send/Receive",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm client (desktop/web/mobile) and exact symptom. 2. Attempt 1: safe mode + new profile. 3. Validate send/receive. 4. Attempt 2: check mailbox quota (TOOL-02/admin tool). 5. Escalate if quota increase or server-side issue is needed."
+  },
+  {
+    "KB_ID": "KB-019",
+    "Category_ID": "CAT-06",
+    "Title": "Missing Emails / Calendar Sync",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm client and symptom. 2. Attempt 1: check rules/filters and re-sync folder. 3. Validate. 4. Attempt 2: rebuild the local cache (OST) or reconnect calendar. 5. Escalate if mail flow rules need admin changes."
+  },
+  {
+    "KB_ID": "KB-020",
+    "Category_ID": "CAT-07",
+    "Title": "Standard Application Access Request",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Confirm app name and requested role. 2. Attempt 1: check access matrix (TOOL-08); if standard/catalogued, grant via TOOL-09. 3. Validate access is live. 4. Attempt 2: re-check group membership if not yet propagated. 5. Escalate to Application Access if role is privileged or not catalogued."
+  },
+  {
+    "KB_ID": "KB-021",
+    "Category_ID": "CAT-07",
+    "Title": "Privileged / Admin Access Request",
+    "Handling_Mode": "Policy Check + Handoff",
+    "Verification_Level": "V4",
+    "Resolution_Steps": "1. Confirm app, requested role, and business justification. 2. Explain privileged roles always require approval (ACT-06). 3. Create approval request to app owner + manager + security. 4. Never auto-grant."
+  },
+  {
+    "KB_ID": "KB-022",
+    "Category_ID": "CAT-08",
+    "Title": "No Internet on Office WiFi",
+    "Handling_Mode": "Scope Check + Two-Attempt Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm connection type and check for known outages (TOOL-02). 2. Ask how many colleagues are affected. 3. If single user: Attempt 1 basic reset (forget/rejoin network); Attempt 2 flush DNS / reboot adapter. 4. If multiple users/site-wide: escalate immediately as a potential incident."
+  },
+  {
+    "KB_ID": "KB-023",
+    "Category_ID": "CAT-08",
+    "Title": "DNS Errors on Home Network + VPN",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm connection type and affected sites. 2. Attempt 1: flush DNS + reconnect VPN. 3. Validate resolution. 4. Attempt 2: check split-tunnel routing. 5. Escalate if routing/DNS infrastructure issue affects many users."
+  },
+  {
+    "KB_ID": "KB-024",
+    "Category_ID": "CAT-09",
+    "Title": "Possible Phishing Email",
+    "Handling_Mode": "Immediate Escalation",
+    "Verification_Level": "V1",
+    "Resolution_Steps": "1. Instruct the user not to click or enter credentials. 2. Collect sender, subject, and any evidence (screenshot/headers). 3. Create a high-priority SOC ticket immediately - no resolution attempt. 4. Confirm with the user whether credentials were entered."
+  },
+  {
+    "KB_ID": "KB-025",
+    "Category_ID": "CAT-09",
+    "Title": "Credential Entered on Suspicious Page",
+    "Handling_Mode": "Immediate Escalation + Containment",
+    "Verification_Level": "V2/V3",
+    "Resolution_Steps": "1. Treat as likely compromise. 2. Trigger password + MFA reset via approved containment action (ACT-09) after verification. 3. Create a SOC ticket flagged as potential compromise. 4. Instruct the user on next steps; never downplay based on the user's own priority label."
+  },
+  {
+    "KB_ID": "KB-026",
+    "Category_ID": "CAT-10",
+    "Title": "Cannot Print - Queue Stuck",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm printer ID and check status. 2. Attempt 1: clear queue and restart spooler (user-side). 3. Validate with a test page. 4. Attempt 2: reinstall driver. 5. Escalate to Workplace/Print Support if the printer itself is offline/faulty."
+  },
+  {
+    "KB_ID": "KB-027",
+    "Category_ID": "CAT-10",
+    "Title": "Printer Offline / Driver Issue",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm printer ID and error code if shown. 2. Attempt 1: restart print spooler service. 3. Validate. 4. Attempt 2: reinstall/update driver. 5. Escalate for hardware fault or network printer configuration."
+  },
+  {
+    "KB_ID": "KB-028",
+    "Category_ID": "CAT-11",
+    "Title": "Collaboration Tool - No Audio/Video",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm tool and issue type. 2. Attempt 1: check OS privacy/permission settings for mic/camera. 3. Validate in a test call. 4. Attempt 2: clear client cache and reinstall. 5. Escalate if the platform itself is degraded (check TOOL-02)."
+  },
+  {
+    "KB_ID": "KB-029",
+    "Category_ID": "CAT-11",
+    "Title": "Cannot Join Meeting",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V0/V1",
+    "Resolution_Steps": "1. Confirm tool and error. 2. Attempt 1: rejoin via web client. 3. Validate. 4. Attempt 2: clear cache/reinstall desktop client. 5. Escalate if outage-wide (TOOL-02)."
+  },
+  {
+    "KB_ID": "KB-030",
+    "Category_ID": "CAT-12",
+    "Title": "Phone Enrollment / MDM Profile Issue",
+    "Handling_Mode": "Two-Attempt Autonomous Resolution",
+    "Verification_Level": "V1/V2",
+    "Resolution_Steps": "1. Confirm device OS and issue type. 2. Attempt 1: sync/fix MDM profile (TOOL-13). 3. Validate compliance status. 4. Attempt 2: remove and re-enroll the work profile. 5. Escalate if compliance cannot be restored."
+  },
+  {
+    "KB_ID": "KB-031",
+    "Category_ID": "CAT-12",
+    "Title": "Lost Phone - Wipe Request",
+    "Handling_Mode": "Verified Tool Action + Handoff",
+    "Verification_Level": "V4",
+    "Resolution_Steps": "1. Verify identity (V2 minimum; V3/V4 per policy). 2. Do not auto-wipe. 3. Create a high-priority security ticket for remote wipe (ACT-08/TOOL-14) requiring explicit security approval. 4. Inform the user of the process and next steps."
+  }
+]

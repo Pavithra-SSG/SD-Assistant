@@ -1,0 +1,277 @@
+{
+  "_about": "Employee-facing drafts of every KB article, written from kb_articles.json. They are loaded as DRAFT version 1 and are only shown to employees after a supervisor approves them on the Knowledge page. Check button names and paths against your own tools (Company Portal name, VPN app, meeting app) before approving. who=you: the employee does it. who=it: only IT can do it, so the bot explains and routes the ticket.",
+  "KB-001": {
+    "title": "Reset your password yourself",
+    "summary": "You can reset your password yourself in a couple of minutes, as long as you can still get a code on your registered email or phone.",
+    "attempt1": {"who": "you", "intro": "Here's how:", "steps": [
+      "On the company sign-in page, select **Forgot password**.",
+      "Confirm it's you with the one-time code sent to your registered email or phone.",
+      "Choose a new password. The page shows the rules it has to meet.",
+      "Sign in again with your new password."],
+      "why": "The code only goes to contact details already on your account, which is how the system knows it's really you."}
+  },
+  "KB-002": {
+    "title": "Password reset with a quick identity check",
+    "summary": "I can reset your password for you once you've approved a sign-in request on your registered authenticator.",
+    "handoff_message": "Identity Support will reset your password for you. They'll confirm it's really you first, so have your work phone or ID to hand."
+  },
+  "KB-003": {
+    "title": "Unlock your account",
+    "summary": "Your account locked itself after too many wrong passwords. That's a safety feature, and I can unlock it once you've confirmed it's you.",
+    "handoff_message": "Identity Support will unlock your account after a quick identity check. If you're not sure of your current password, they can reset it at the same time."
+  },
+  "KB-004": {
+    "title": "Several password resets in a row",
+    "summary": "Several resets in a short time can mean someone else is trying to get into your account.",
+    "handoff_message": "To keep your account safe, I've stopped further resets and passed this to Security. They'll contact you shortly. Please don't try another reset in the meantime."
+  },
+  "KB-005": {
+    "title": "VPN won't connect",
+    "summary": "Sorry you can't get onto the VPN. Most of the time the VPN app is holding on to an old connection, and a clean restart sorts it out.",
+    "attempt1": {"who": "you", "intro": "Let's give the VPN app a clean restart:", "steps": [
+      "Disconnect the VPN, then close the VPN app completely (right-click its icon near the clock and choose **Exit** or **Quit**).",
+      "If the VPN app's settings have a **Clear cache** or **Reset** option, use it.",
+      "Open the VPN app again and connect as usual."],
+      "why": "This clears the stuck connection so the app starts fresh."},
+    "attempt2": {"who": "you", "intro": "Let's set up the VPN connection again from scratch:", "steps": [
+      "In the VPN app's settings, remove the VPN connection (profile).",
+      "Add it again: install the **VPN profile** from the Company Portal.",
+      "Restart your laptop, then connect."],
+      "why": "A damaged connection profile is the next most common cause, and reinstalling it replaces it cleanly."}
+  },
+  "KB-006": {
+    "title": "VPN certificate or trust error",
+    "summary": "This error means your laptop doesn't trust the VPN's security certificate right now, usually because it has expired or your laptop's clock is wrong. First, check your laptop's date and time are correct; if they're not, fix them and try again.",
+    "attempt1": {"who": "you", "intro": "Let's get a fresh certificate:", "steps": [
+      "Open the Company Portal and reinstall the **VPN certificate profile**.",
+      "Restart the VPN app and connect."],
+      "why": "The certificate is what lets your laptop prove it's allowed on the network, and a fresh copy replaces an expired one."},
+    "attempt2": {"who": "you", "intro": "Let's clear out the old certificate and repair the VPN app:", "steps": [
+      "In the VPN app's settings, remove the old certificate if there's an option for it (if it needs admin rights, skip this step and tell me).",
+      "Open the Company Portal, select the VPN app and choose **Repair**.",
+      "Connect again."],
+      "why": "An old certificate can block the new one, and a repair puts the app's files back in order."}
+  },
+  "KB-007": {
+    "title": "VPN keeps dropping",
+    "summary": "Frequent drops usually come from an out-of-date VPN app, or the laptop going to sleep and cutting the connection.",
+    "attempt1": {"who": "you", "intro": "Two quick changes usually fix it:", "steps": [
+      "Update the VPN app from the Company Portal (or use its **Check for updates** option).",
+      "While you're on the VPN, stop your laptop from sleeping: Settings → System → Power, and set sleep **when plugged in** to **Never**.",
+      "Reconnect and work as normal for a while."],
+      "why": "Newer versions of the app handle connection hiccups better, and sleep mode cuts the VPN off."},
+    "attempt2": {"who": "you", "intro": "Let's find out whether it's the network:", "steps": [
+      "Connect to a different network, for example your phone's hotspot.",
+      "Use the VPN for a while and tell me if it still drops."],
+      "why": "If it only drops on one network, the problem is that network rather than your laptop, and that tells the team exactly where to look."}
+  },
+  "KB-008": {
+    "title": "Set up the VPN for the first time",
+    "summary": "Setting up the VPN takes about ten minutes, and you'll need your authenticator app for the first sign-in.",
+    "attempt1": {"who": "you", "intro": "Here's how:", "steps": [
+      "Open the Company Portal and install the **VPN** app.",
+      "Install the **VPN profile** from the Company Portal too (or import it when the app asks).",
+      "Connect for the first time and approve the sign-in on your authenticator app.",
+      "Check you can open one internal site, such as the intranet."],
+      "why": "The app, the profile and your sign-in approval together prove your laptop is allowed on the company network."},
+    "attempt2": {"who": "you", "intro": "Let's repair the install:", "steps": [
+      "In the Company Portal, open the VPN app and choose **Repair** (or **Uninstall**, then **Install** again).",
+      "Connect again and approve the sign-in."],
+      "why": "A repair replaces any part of the install that didn't finish properly."}
+  },
+  "KB-009": {
+    "title": "Request standard software",
+    "summary": "Standard software is licensed centrally, so the team assigns a licence to you rather than you buying or downloading it.",
+    "attempt1": {"who": "it", "note": "The Software Asset team checks whether it's pre-approved for your role and whether a licence seat is free, then assigns it to you."},
+    "attempt2": {"who": "it", "note": "If no seat is free, the team can move one from someone who no longer uses it, or raise a purchase request."}
+  },
+  "KB-010": {
+    "title": "Install software from the Company Portal",
+    "summary": "Most approved software installs itself from the Company Portal, with no admin rights needed.",
+    "attempt1": {"who": "you", "intro": "Here's how:", "steps": [
+      "Open the **Company Portal** and search for the app.",
+      "Select **Install** and wait for it to finish.",
+      "Restart your laptop if it asks you to, then open the app."],
+      "why": "The portal installs software the approved way, so it's licensed and kept up to date for you."},
+    "attempt2": {"who": "you", "intro": "Let's repair it:", "steps": [
+      "In the Company Portal, open the app and choose **Repair** or **Reinstall**.",
+      "Open the app again. If you see an error code, tell me exactly what it says."],
+      "why": "A repair fixes a half-finished install without you losing your settings."}
+  },
+  "KB-011": {
+    "title": "Software licence expired or won't activate",
+    "summary": "When software says the licence expired or can't activate, the licence usually needs to be reassigned or renewed centrally.",
+    "attempt1": {"who": "it", "note": "The Software Asset team checks for a free licence and reassigns it to you."},
+    "attempt2": {"who": "it", "note": "If there's no free licence, the team checks the renewal with procurement."}
+  },
+  "KB-012": {
+    "title": "Request new or non-standard software",
+    "summary": "New software has to pass a quick security and licensing review before anyone can install it.",
+    "handoff_message": "I've sent your request to the review team with the details you gave. They'll let you know the outcome. Please don't download or install it from the internet in the meantime."
+  },
+  "KB-013": {
+    "title": "Hardware problem",
+    "summary": "Hardware problems need a hands-on check.",
+    "handoff_message": "I've passed this to the hardware team with your device details, and they'll contact you to arrange the next step. If you have a spare cable or monitor handy, trying it can help them narrow it down, but please don't open the device."
+  },
+  "KB-014": {
+    "title": "Laptop won't turn on",
+    "summary": "A laptop that won't turn on needs the hardware team.",
+    "handoff_message": "I've passed this to the hardware team. Two quick checks can help before they contact you: try a different charger if you have one, and hold the power button for about 15 seconds, then press it once more. If the laptop was dropped or got wet, please tell them."
+  },
+  "KB-015": {
+    "title": "Keyboard, mouse or other accessory not working",
+    "summary": "Faulty accessories are repaired or replaced by the hardware team.",
+    "handoff_message": "I've asked the hardware team to repair or replace it. Meanwhile, trying a different USB port or cable can show whether it's the accessory or the port."
+  },
+  "KB-016": {
+    "title": "New phone: set up sign-in approvals again",
+    "summary": "Moving your sign-in approvals to a new phone needs a quick identity check first. Then your old registration is reset so you can add the new phone.",
+    "handoff_message": "Identity Security will confirm it's you and then help you register your new phone."
+  },
+  "KB-017": {
+    "title": "Sign-in approval not showing up",
+    "summary": "When the sign-in approval doesn't appear, it's usually waiting inside the authenticator app, or your phone's clock is slightly off.",
+    "attempt1": {"who": "you", "intro": "Try this:", "steps": [
+      "Open your authenticator app directly: the request may be waiting inside it.",
+      "If you use a 6-digit code instead, make sure your phone sets its time automatically (Settings → Date & time → Automatic), because the codes depend on the exact time."],
+      "why": "Notifications sometimes don't pop up, but the request is still in the app."},
+    "attempt2": {"who": "you", "intro": "Let's use a backup code:", "steps": [
+      "Sign in with one of your backup codes.",
+      "Once you're in, set up your authenticator app again from your account's security settings."],
+      "why": "Backup codes get you in once, and setting the app up again fixes the broken link to your phone."}
+  },
+  "KB-018": {
+    "title": "Outlook won't send or receive",
+    "summary": "When Outlook gets stuck, an add-in or a damaged Outlook profile is the usual cause.",
+    "attempt1": {"who": "you", "intro": "Let's test Outlook in safe mode, then give it a fresh profile:", "steps": [
+      "Close Outlook. Hold **Ctrl** while you open it again, and choose **Yes** to start in safe mode.",
+      "If it sends and receives in safe mode, close it and create a new Outlook profile: Control Panel → Mail → **Show Profiles** → **Add**.",
+      "Open Outlook with the new profile and send yourself a test email."],
+      "why": "Safe mode switches off add-ins, and a new profile replaces damaged settings without touching your emails."},
+    "attempt2": {"who": "it", "note": "The team checks whether your mailbox is full and increases the space if needed."}
+  },
+  "KB-019": {
+    "title": "Missing emails or calendar not syncing",
+    "summary": "Emails that seem to vanish are usually moved by a rule or filter, and a calendar that won't sync usually needs a fresh update.",
+    "attempt1": {"who": "you", "intro": "Let's check where they went:", "steps": [
+      "In Outlook, open **File → Manage Rules & Alerts** and look for any rule that moves or deletes these emails.",
+      "Check your **Junk** and **Other** folders too.",
+      "Right-click the folder or calendar and choose **Update Folder** to sync it again."],
+      "why": "Rules and filters quietly move emails, and a re-sync fetches anything that didn't come through."},
+    "attempt2": {"who": "it", "note": "Rebuilding Outlook's local copy of your mailbox, or reconnecting the calendar, is best done with the team's help."}
+  },
+  "KB-020": {
+    "title": "Access to a standard application",
+    "summary": "Access to standard applications is granted by the Application Access team from the approved catalogue.",
+    "attempt1": {"who": "it", "note": "The Application Access team checks your request against the approved access list and grants it if it's a standard role."},
+    "attempt2": {"who": "it", "note": "If access doesn't show up yet, the team checks your group membership, since new access can take a little while to reach every system."}
+  },
+  "KB-021": {
+    "title": "Admin or privileged access",
+    "summary": "Admin and privileged access always needs approval, for everyone.",
+    "handoff_message": "I've raised an approval request with the app owner, your manager and Security. You'll be notified once they decide."
+  },
+  "KB-022": {
+    "title": "No internet on office Wi-Fi",
+    "summary": "When the office Wi-Fi connects but nothing loads, reconnecting usually fixes it.",
+    "attempt1": {"who": "you", "intro": "Let's reconnect to the Wi-Fi from scratch:", "steps": [
+      "Open your Wi-Fi list, select the office network and choose **Forget**.",
+      "Connect to it again and sign in if asked."],
+      "why": "Forgetting the network clears saved settings that may have gone stale."},
+    "attempt2": {"who": "you", "intro": "Let's refresh your laptop's network settings:", "steps": [
+      "Restart your laptop. This resets the network adapter and clears stored website addresses (the DNS cache).",
+      "Connect to the office Wi-Fi and try again."],
+      "why": "A restart gives the network card and its settings a clean start."}
+  },
+  "KB-023": {
+    "title": "Websites won't load at home on the VPN",
+    "summary": "When sites won't load at home while you're on the VPN, the stored website addresses (DNS) are often out of date.",
+    "attempt1": {"who": "you", "intro": "Let's refresh them:", "steps": [
+      "Disconnect the VPN.",
+      "Restart your laptop. This clears the stored website addresses.",
+      "Connect to the VPN again and try the site."],
+      "why": "Your laptop may be looking up sites with old addresses, and a restart makes it fetch fresh ones."},
+    "attempt2": {"who": "it", "note": "The network team checks how your VPN routes internet traffic (split tunnelling)."}
+  },
+  "KB-024": {
+    "title": "Suspicious or phishing email",
+    "summary": "Thanks for reporting it. That's exactly the right thing to do.",
+    "handoff_message": "Please don't click any links, open attachments or reply to that message. Security Operations has it now. If you entered your password anywhere, tell them straight away."
+  },
+  "KB-025": {
+    "title": "Password entered on a suspicious page",
+    "summary": "Thanks for telling us quickly. It really helps.",
+    "handoff_message": "Treat that password as known to someone else, and don't use it anywhere. Security will confirm it's you, then reset your password and sign-in approvals. They'll contact you shortly."
+  },
+  "KB-026": {
+    "title": "Printing is stuck",
+    "summary": "When documents sit in the queue and nothing prints, clearing the queue usually frees it up.",
+    "attempt1": {"who": "you", "intro": "Let's clear the queue:", "steps": [
+      "Open **Settings → Printers & scanners**, select the printer and choose **Open print queue**.",
+      "Cancel all the documents in the queue.",
+      "Restart your laptop (this restarts the printing service), then print a test page."],
+      "why": "One stuck document can block everything behind it."},
+    "attempt2": {"who": "you", "intro": "Let's reinstall the printer:", "steps": [
+      "In **Settings → Printers & scanners**, select the printer and choose **Remove**.",
+      "Add it again from the Company Portal or with **Add a printer**, which installs its driver fresh.",
+      "Print a test page."],
+      "why": "A fresh driver fixes printing that fails even with an empty queue."}
+  },
+  "KB-027": {
+    "title": "Printer offline",
+    "summary": "A printer that shows as offline often just needs the printing service on your laptop restarted.",
+    "attempt1": {"who": "you", "intro": "Try this:", "steps": [
+      "Restart your laptop. This restarts the printing service.",
+      "Print again."],
+      "why": "The printing service sometimes loses track of the printer, and a restart reconnects it."},
+    "attempt2": {"who": "you", "intro": "Let's update the printer's driver:", "steps": [
+      "In **Settings → Printers & scanners**, select the printer and choose **Remove**.",
+      "Add it again from the Company Portal so the latest driver installs.",
+      "Print a test page."],
+      "why": "An old or damaged driver can make a working printer look offline."}
+  },
+  "KB-028": {
+    "title": "No sound or video in meetings",
+    "summary": "When others can't hear or see you, your laptop's privacy settings are usually blocking the microphone or camera.",
+    "attempt1": {"who": "you", "intro": "Let's check the permissions:", "steps": [
+      "Open **Settings → Privacy & security → Microphone** (and **Camera**) and make sure access is on for your meeting app.",
+      "In the meeting app's settings, check it's using the right microphone and camera.",
+      "Make a test call."],
+      "why": "Windows can block apps from the microphone and camera even when everything is plugged in."},
+    "attempt2": {"who": "you", "intro": "Let's refresh the meeting app:", "steps": [
+      "Close the meeting app completely.",
+      "Clear its cache, or reinstall it from the Company Portal.",
+      "Make another test call."],
+      "why": "Old cached settings in the app can keep using the wrong device."}
+  },
+  "KB-029": {
+    "title": "Can't join a meeting",
+    "summary": "If the meeting app won't let you in, joining from your web browser usually works straight away.",
+    "attempt1": {"who": "you", "intro": "Try the web version:", "steps": [
+      "Open the meeting link and choose **Continue in browser** (or **Join on the web instead**).",
+      "Allow the microphone and camera when your browser asks."],
+      "why": "The web version skips anything wrong with the desktop app, so you can join now."},
+    "attempt2": {"who": "you", "intro": "Let's fix the desktop app for next time:", "steps": [
+      "Close the meeting app, then clear its cache or reinstall it from the Company Portal.",
+      "Join the meeting again."],
+      "why": "A fresh install replaces damaged app files."}
+  },
+  "KB-030": {
+    "title": "Work phone setup or compliance problem",
+    "summary": "When your phone says it isn't compliant or work apps stop working, the work profile usually just needs to sync.",
+    "attempt1": {"who": "you", "intro": "Let's sync it:", "steps": [
+      "Open the **Company Portal** app on your phone.",
+      "Tap **Check status** or **Sync** and wait for it to finish."],
+      "why": "Syncing checks your phone against the company rules again and fixes most profile problems."},
+    "attempt2": {"who": "you", "intro": "Let's set up the work profile again:", "steps": [
+      "Remove the work profile from your phone.",
+      "Enrol again through the Company Portal app. Your work apps and data will come back; your personal data isn't touched."],
+      "why": "A fresh work profile replaces one that can't sync any more."}
+  },
+  "KB-031": {
+    "title": "Lost or stolen phone",
+    "summary": "I'm sorry your phone is lost. Wiping it remotely protects company data, but it needs Security's approval.",
+    "handoff_message": "I've raised an urgent request with Security. They'll confirm it's you and contact you about the next steps."
+  }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "Category_ID": "CAT-01",
+    "Category": "Password & Account Access",
+    "Pre_Checks": "Risk check + verification level decision",
+    "Attempt_1": "Self-service/recovery using existing registered factor",
+    "Attempt_2": "V2 tool action and retest",
+    "Success_Criteria": "Fresh login/MFA challenge succeeds",
+    "Escalation_Conditions": "V3/V4, risk flag, failed verification or tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-02",
+    "Category": "VPN & Remote Access",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-03",
+    "Category": "Software License & Installation",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-04",
+    "Category": "Hardware & Peripherals",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-05",
+    "Category": "MFA & Authentication",
+    "Pre_Checks": "Risk check + verification level decision",
+    "Attempt_1": "Self-service/recovery using existing registered factor",
+    "Attempt_2": "V2 tool action and retest",
+    "Success_Criteria": "Fresh login/MFA challenge succeeds",
+    "Escalation_Conditions": "V3/V4, risk flag, failed verification or tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-06",
+    "Category": "Email & Outlook",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-07",
+    "Category": "Application Access & Permissions",
+    "Pre_Checks": "Role, owner, approval, and privilege check",
+    "Attempt_1": "Approved standard entitlement only",
+    "Attempt_2": "Refresh/recheck assignment and test",
+    "Success_Criteria": "Approved role opens intended resource",
+    "Escalation_Conditions": "Privileged/external/sensitive/SoD-relevant, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-08",
+    "Category": "Network & Connectivity",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-09",
+    "Category": "Security Incidents",
+    "Pre_Checks": "Safety/security gate",
+    "Attempt_1": "Protect user; collect minimum evidence",
+    "Attempt_2": "First safe KB-backed action, then exact functional test",
+    "Success_Criteria": "Containment recorded and SOC reference created",
+    "Escalation_Conditions": "Mandatory SOC handoff",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-10",
+    "Category": "Printer & Scanning",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-11",
+    "Category": "Collaboration Tools",
+    "Pre_Checks": "Scope, safety, outage, policy, and prerequisites",
+    "Attempt_1": "First safe KB-backed action, then exact functional test",
+    "Attempt_2": "Different supported path, then exact functional test",
+    "Success_Criteria": "User/tool confirms original function succeeds",
+    "Escalation_Conditions": "Mandatory condition, low confidence, tool failure, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  },
+  {
+    "Category_ID": "CAT-12",
+    "Category": "Mobile Device & MDM",
+    "Pre_Checks": "Ownership, OS, compliance, risk check",
+    "Attempt_1": "Sync/fix documented compliance and retest",
+    "Attempt_2": "Safe re-enrollment/work-profile rebuild and retest",
+    "Success_Criteria": "Compliant state plus managed service works",
+    "Escalation_Conditions": "Lost/wiped, unsupported/rooted, policy exception, or two failed attempts",
+    "Max_Autonomous_Attempts": 2
+  }
+]

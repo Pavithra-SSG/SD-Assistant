@@ -1,0 +1,502 @@
+[
+  {
+    "asset_id": "LT-70001",
+    "employee_id": "EMP1001",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Noncompliant"
+  },
+  {
+    "asset_id": "LT-70002",
+    "employee_id": "EMP1002",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70003",
+    "employee_id": "EMP1003",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70004",
+    "employee_id": "EMP1004",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70005",
+    "employee_id": "EMP1005",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70006",
+    "employee_id": "EMP1006",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70007",
+    "employee_id": "EMP1007",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70008",
+    "employee_id": "EMP1008",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70009",
+    "employee_id": "EMP1009",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70010",
+    "employee_id": "EMP1010",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70011",
+    "employee_id": "EMP1011",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70012",
+    "employee_id": "EMP1012",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70013",
+    "employee_id": "EMP1013",
+    "type": "Laptop",
+    "model": "Northwind Mobile 15",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70014",
+    "employee_id": "EMP1014",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70015",
+    "employee_id": "EMP1015",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70016",
+    "employee_id": "EMP1016",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70017",
+    "employee_id": "EMP1017",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70018",
+    "employee_id": "EMP1018",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70019",
+    "employee_id": "EMP1019",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70020",
+    "employee_id": "EMP1020",
+    "type": "Laptop",
+    "model": "Northwind Mobile 15",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70021",
+    "employee_id": "EMP1021",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70022",
+    "employee_id": "EMP1022",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70023",
+    "employee_id": "EMP1023",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70024",
+    "employee_id": "EMP1024",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70025",
+    "employee_id": "EMP1025",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70026",
+    "employee_id": "EMP1026",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70027",
+    "employee_id": "EMP1027",
+    "type": "Laptop",
+    "model": "Northwind Mobile 15",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70028",
+    "employee_id": "EMP1028",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70029",
+    "employee_id": "EMP1029",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70030",
+    "employee_id": "EMP1030",
+    "type": "Laptop",
+    "model": "Northwind Mobile 15",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70031",
+    "employee_id": "EMP1031",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70032",
+    "employee_id": "EMP1032",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70033",
+    "employee_id": "EMP1033",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70034",
+    "employee_id": "EMP1034",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70035",
+    "employee_id": "EMP1035",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70036",
+    "employee_id": "EMP1036",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70037",
+    "employee_id": "EMP1037",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70038",
+    "employee_id": "EMP1038",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70039",
+    "employee_id": "EMP1039",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70040",
+    "employee_id": "EMP1040",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70041",
+    "employee_id": "EMP1041",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70042",
+    "employee_id": "EMP1042",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70043",
+    "employee_id": "EMP1043",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70044",
+    "employee_id": "EMP1044",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70045",
+    "employee_id": "EMP1045",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70046",
+    "employee_id": "EMP1046",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70047",
+    "employee_id": "EMP1047",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 24H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70048",
+    "employee_id": "EMP1048",
+    "type": "Laptop",
+    "model": "Fabrikam Elite 13",
+    "os": "Windows 11 23H2",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70049",
+    "employee_id": "EMP1049",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  },
+  {
+    "asset_id": "LT-70050",
+    "employee_id": "EMP1050",
+    "type": "Laptop",
+    "model": "Contoso Pro 14",
+    "os": "macOS 15",
+    "ownership": "Corporate",
+    "status": "Active",
+    "compliance": "Compliant"
+  }
+]
