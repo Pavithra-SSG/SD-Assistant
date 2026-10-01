@@ -118,6 +118,8 @@ a verified channel, then delete the file. Everyone must change theirs at first s
 
 ## Updating to a new version
 
+With CD switched on (next section) this happens by itself after each merge to `main`. By hand:
+
 ```bash
 git pull
 # set APP_VERSION in .env.production to the new version
@@ -127,6 +129,49 @@ dc exec api python manage.py check
 
 Database changes are applied automatically at start-up; they only add tables and columns, never remove data.
 Take a backup first (below) for anything bigger than a patch release.
+
+## Automatic deployment (CD)
+
+Two GitHub Actions workflows run on every push:
+
+| Workflow | When | Does |
+|---|---|---|
+| **CI** (`ci.yml`) | Every push and pull request | All tests on SQLite and Postgres, then builds the production image |
+| **CD → publish** (`cd.yml`) | After CI passes on `main` | Builds the image once and stores it as `ghcr.io/pavithra-ssg/sd-assistant:<commit SHA>` (and `:latest`) |
+| **CD → deploy** | After publish, **only when switched on** | Connects to the server over SSH and switches it to that exact image |
+
+Publish needs no setup. Deploy stays off (the job shows as skipped) until you do this once:
+
+1. **On the server**, finish "First install" above with the repository cloned to `~/servicedesk`, and make
+   sure the deploy user can run `docker` (`sudo usermod -aG docker <user>`, then sign in again).
+2. **Create a deploy key pair** on your PC (`ssh-keygen -t ed25519 -f sd_deploy -N ""`). Add the public half
+   (`sd_deploy.pub`) to `~/.ssh/authorized_keys` of the deploy user on the server.
+3. **In GitHub → Settings → Secrets and variables → Actions:**
+
+   | Kind | Name | Value |
+   |---|---|---|
+   | Secret | `DEPLOY_HOST` | Server address (IP or DNS name) |
+   | Secret | `DEPLOY_USER` | The SSH user |
+   | Secret | `DEPLOY_SSH_KEY` | The whole private key file `sd_deploy` |
+   | Secret | `DEPLOY_PORT` | Optional, if SSH isn't on 22 |
+   | Variable | `DEPLOY_ENABLED` | `true` |
+   | Variable | `DEPLOY_PATH` | Optional, if the clone isn't `~/servicedesk` |
+   | Variable | `SITE_URL` | `https://servicedesk.company.com` (shown on the deployment) |
+   | Variable | `SMOKE_URL` | Optional: a URL GitHub can reach to confirm the site answers (leave unset on a private network) |
+
+4. **Settings → Environments → New environment `production` → Required reviewers**: add who must approve.
+   Each deployment then waits for one of them to click **Approve** in the Actions tab.
+5. Delete `sd_deploy` from your PC once it's stored in GitHub.
+
+What a deployment does on the server: checks out the same commit (compose file, Caddyfile), writes `APP_IMAGE`
+and `APP_VERSION` into `.env.production`, pulls the image, `docker compose up -d` (migrations run first, as at
+every start), then waits up to 3 minutes for `manage.py check` to say `OK`. If it doesn't, the job fails and
+prints the logs; the database changes only ever add, so the previous version can still run.
+
+**Roll back:** Actions → CD → **Run workflow**, paste the full commit SHA of the last good version. Its image is
+reused (no rebuild) and deployed the same way.
+
+**Without CD** everything above still works by hand: leave `APP_IMAGE` unset and use `dc up -d --build`.
 
 ## Backups and restore
 

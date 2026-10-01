@@ -1,0 +1,135 @@
+# Continuous delivery. Runs after CI passes on main (or by hand, for a rollback).
+#   publish: builds the production image once and pushes it to GitHub's registry, tagged with the commit SHA
+#            (and "latest"). Servers pull this tested image instead of building their own.
+#   deploy:  SSHes to the server and switches it to that image. Off until the repository variable
+#            DEPLOY_ENABLED is "true"; waits for approval when the "production" environment has required
+#            reviewers. Setup: docs/DEPLOY.md, "Automatic deployment (CD)".
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Full commit SHA to deploy (for a rollback). Empty = the newest commit on main."
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:  # one deployment at a time, never cancelled half-way
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # only for pushes to main whose CI passed (not pull requests from forks), or a manual run
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - id: meta
+        env:
+          WANTED: ${{ inputs.version || github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "version=$WANTED" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: existing  # a rollback to an already published version needs no rebuild
+        run: |
+          if docker manifest inspect "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" >/dev/null 2>&1
+          then echo "found=true" >> "$GITHUB_OUTPUT"; else echo "found=false" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.existing.outputs.found != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.version }}
+      - if: steps.existing.outputs.found != 'true'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.existing.outputs.found != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: APP_VERSION=${{ steps.meta.outputs.version }}
+          # "latest" follows main only; a rollback does not move it
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ github.event_name == 'workflow_run' && format('{0}:latest', steps.meta.outputs.image) || '' }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Summary
+        run: |
+          echo "Image ready: \`${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: publish
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    steps:
+      - name: Switch the server to the new image
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+          VERSION: ${{ needs.publish.outputs.version }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || 'servicedesk' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          envs: IMAGE,VERSION,DEPLOY_PATH,GHCR_USER,GHCR_TOKEN
+          command_timeout: 20m
+          script: |
+            set -eu
+            cd "$DEPLOY_PATH"
+            # compose file, Caddyfile and backup script from the same commit as the image
+            git fetch --quiet origin
+            git checkout --quiet --detach "$VERSION"
+            set_env() {
+              if grep -q "^$1=" .env.production; then sed -i "s|^$1=.*|$1=$2|" .env.production
+              else printf '\n%s=%s\n' "$1" "$2" >> .env.production; fi
+            }
+            set_env APP_IMAGE "$IMAGE"
+            set_env APP_VERSION "$VERSION"
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            dc="docker compose --env-file .env.production"
+            $dc pull --quiet
+            docker logout ghcr.io
+            $dc up -d --no-build --remove-orphans   # migrate runs first, as at every start
+            ok=0
+            for i in $(seq 1 36); do
+              if $dc exec -T api python manage.py check; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" != 1 ]; then
+              echo "The new version did not become healthy. Recent logs:"
+              $dc logs --tail 60 migrate api worker
+              exit 1
+            fi
+            echo "Deployed $IMAGE:$VERSION"
+      - name: Check the site answers
+        if: vars.SMOKE_URL != ''
+        run: curl -fsS --retry 12 --retry-delay 5 --retry-all-errors -o /dev/null "${{ vars.SMOKE_URL }}"
+      - name: Summary
+        run: |
+          echo "Deployed \`${{ needs.publish.outputs.version }}\` to production." >> "$GITHUB_STEP_SUMMARY"

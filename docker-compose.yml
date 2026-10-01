@@ -5,8 +5,10 @@
 # Full runbook: docs/DEPLOY.md
 name: servicedesk
 
+# APP_IMAGE unset: the image is built here (--build). Set to ghcr.io/pavithra-ssg/sd-assistant to run the image the
+# CD pipeline published instead (docker compose pull); APP_VERSION then picks the tag (a commit SHA, or latest).
 x-app: &app
-  image: servicedesk:${APP_VERSION:-latest}
+  image: ${APP_IMAGE:-servicedesk}:${APP_VERSION:-latest}
   build:
     context: .
     args:
