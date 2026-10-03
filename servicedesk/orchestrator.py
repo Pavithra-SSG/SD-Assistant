@@ -40,6 +40,8 @@ OPEN_TICKET = "Open a ticket for this"
 SAME_ISSUE, NEW_ISSUE = "Yes, same issue", "No, it's something new"
 SAME_OUTAGE, JUST_ME = "Yes, same problem", "No, it's just me"
 PERSON_PLEASE = "Connect me with a person"
+WRONG_SHOT, SEPARATE_PROBLEM, CARRY_ON = ("Wrong screenshot, I'll send another", "It's a separate problem",
+                                          "Carry on with my current issue")
 # Scripts we can't read yet (Tamil, Devanagari, Telugu, Kannada, Malayalam, Bengali, Gujarati, Gurmukhi, Odia)
 _NON_ENGLISH_SCRIPT = re.compile(r"[\u0900-\u0D7F]")
 _NON_USER_PRESTEP = re.compile(r"TOOL-|^Collect|^Ask |^Retrieve|^Confirm scope|^Check known|^Confirm "
@@ -172,6 +174,17 @@ class ConversationService:
         atts = getattr(self, "_attachments", [])
         self._screenshot_error = next((ln for a in atts if a["readable"]
                                        for ln in problem_lines(a["ocr_text"] or "")), "")
+        typed, context = message, ""
+        if atts and st.get("stage") == "CONFIRM_SCREENSHOT":  # a new screenshot replaces the doubtful one
+            st["stage"] = st.pop("shot_pending", {}).get("prev_stage", "IDLE")
+        if atts and self._screenshot_error and st.get("ticket_id") and st.get("stage") in (
+                "COLLECTING", "VALIDATING", "ESCALATED"):
+            try:
+                other = self._screenshot_other_problem()
+            except BrainError:
+                other = None
+            if other:  # never act on a screenshot of a different problem without asking
+                return self._finish(self._ask_about_screenshot(other, typed))
         if atts:  # what the screenshot says becomes part of what Jev reads; the note tells the employee
             context, note = summary_for_bot(atts)
             if note:
@@ -183,10 +196,19 @@ class ConversationService:
                 message = f"{lead}\n\nText from the attached screenshot:\n{context}"
             self._t("Screenshot", f"{len(atts)} attached · error codes: "
                                   f"{sorted({c for a in atts for c in a['error_codes']}) or 'none'}")
+        if atts and not typed.strip() and not context:
+            # an image with nothing usable and no words: don't guess (and don't greet them as if they'd said hi)
+            return self._finish(self._reprompt())
+        return self._finish(self._route(message))
+
+    def _route(self, message: str) -> Reply:
+        st = self._st
         try:
             stage = st.get("stage", "IDLE")
             if stage == "HUMAN":
                 reply = self._to_human_owner(message)  # a human owns the conversation: the bot stays silent
+            elif stage == "CONFIRM_SCREENSHOT":
+                reply = self._on_confirm_screenshot(message)
             elif stage == "CONFIRM_CATEGORY":
                 reply = self._on_confirm_category(message)
             elif stage == "CONFIRM_INCIDENT":
@@ -210,7 +232,72 @@ class ConversationService:
                 reply = self._triage(message)
         except BrainError as e:
             reply = self._fallback(str(e), message)
-        return self._finish(reply)
+        return reply
+
+    # ---------------------------------------------------------------- screenshots that don't fit
+    def _screenshot_other_problem(self) -> str | None:
+        """Category of the screenshot's error when it clearly belongs to a different problem than the open
+        ticket (e.g. a printer jam sent during a VPN fix); None when it fits or we can't tell."""
+        t = self.tickets.get(self._st["ticket_id"])
+        tri = self.brain.triage(self._screenshot_error, [])
+        if not tri.categories:
+            return None
+        probs = dict(tri.categories)
+        top, p = tri.categories[0]
+        self._t("Screenshot check", f"screenshot looks like {self.k.name(top)} {_pct(p)}; ticket is "
+                                    f"{self.k.name(t['category_id'])} {_pct(probs.get(t['category_id'], 0))}")
+        if top not in (t["category_id"], OTHER_CATEGORY) and p >= config.SCREENSHOT_MISMATCH_CONFIDENCE \
+                and probs.get(t["category_id"], 0) < 0.2:
+            return top
+        return None
+
+    def _ask_about_screenshot(self, other_cat: str, typed: str) -> Reply:
+        st = self._st
+        t = self.tickets.get(st["ticket_id"])
+        st["shot_pending"] = {"prev_stage": st["stage"], "typed": typed, "category": other_cat,
+                              "error": self._screenshot_error}
+        st["stage"] = "CONFIRM_SCREENSHOT"
+        self._t("Screenshot check", "different problem → asked before using it")
+        return Reply(f"Thanks for the screenshot. It shows _\"{self._screenshot_error[:140]}\"_, which looks like "
+                     f"a **{self.k.name(other_cat)}** problem, but we're working on your "
+                     f"**{self.k.name(t['category_id'])}** issue (**{t['ticket_id']}**).\n\nWhat would you like to do?",
+                     quick_replies=[WRONG_SHOT, SEPARATE_PROBLEM, CARRY_ON])
+
+    def _on_confirm_screenshot(self, message: str) -> Reply:
+        st = self._st
+        p = st.pop("shot_pending", {})
+        st["stage"] = p.get("prev_stage", "IDLE")
+        tid = st.get("ticket_id")
+        if message == SEPARATE_PROBLEM:
+            st["stage"] = "IDLE"
+            self._t("Screenshot check", "employee: separate problem → new triage")
+            reply = self._triage(f"Screenshot shows: {p.get('error', '')}")
+            reply.text = (f"Okay, I'll treat that as a new problem. Your **{tid}** ticket stays open.\n\n"
+                          f"{reply.text or ''}").strip()
+            return reply
+        if message == WRONG_SHOT:
+            return self._reprompt("No problem. Attach the right one with the **+** button whenever you're ready.")
+        if message == CARRY_ON:
+            if (p.get("typed") or "").strip():  # what they typed with the screenshot still counts
+                self._user_text = p["typed"]
+                return self._route(p["typed"])
+            return self._reprompt("Okay, let's carry on.")
+        return self._route(message)  # they answered in words instead: handle it as a normal reply
+
+    def _reprompt(self, lead: str = "") -> Reply:
+        """Ask again for whatever we were waiting for, with its buttons."""
+        st = self._st
+        stage = st.get("stage", "IDLE")
+        if stage == "COLLECTING" and st.get("current_field"):
+            ask, opts = field_question(st["current_field"])
+            return Reply(f"{lead}\n\nMeanwhile: **{ask}**".strip(), quick_replies=opts)
+        if stage == "VALIDATING":
+            return Reply(f"{lead}\n\nDid the last steps fix it?".strip(), quick_replies=VALIDATION_REPLIES)
+        if stage == "ESCALATED" and st.get("ticket_id"):
+            r = self._after_handoff()
+            r.text = f"{lead}\n\n{r.text}".strip()
+            return r
+        return Reply(f"{lead}\n\nWhat's going wrong? Tell me in a sentence and I'll take it from there.".strip())
 
     def _language_guard(self, message: str) -> Reply:
         """We can only triage English reliably. Say so kindly and offer a person, never guess."""

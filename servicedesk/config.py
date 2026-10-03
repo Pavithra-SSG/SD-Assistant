@@ -104,6 +104,9 @@ BUSINESS_HOURS = os.getenv("BUSINESS_HOURS", "09:00-18:00")
 BUSINESS_DAYS = os.getenv("BUSINESS_DAYS", "Mon-Fri")
 HOLIDAYS_FILE = os.getenv("HOLIDAYS_FILE", "")  # one YYYY-MM-DD per line, # comments allowed
 SLA_24X7_PRIORITIES = tuple(p.strip() for p in os.getenv("SLA_24X7_PRIORITIES", "P1").split(",") if p.strip())
+# A screenshot mid-ticket is treated as "a different problem" (and the employee is asked) only when Jev is at
+# least this sure it belongs to another category and gives the ticket's own category under 20%.
+SCREENSHOT_MISMATCH_CONFIDENCE = float(os.getenv("SCREENSHOT_MISMATCH_CONFIDENCE", "0.6"))
 # routing_matrix After_Hours_Rule: "24x7 for P1/security": security incidents never wait for Monday either
 SLA_24X7_CATEGORIES = tuple(c.strip() for c in os.getenv("SLA_24X7_CATEGORIES", "CAT-09").split(",") if c.strip())
 # Statuses where the SLA clock stops because we're waiting on the employee (dataset Pause_Rule)

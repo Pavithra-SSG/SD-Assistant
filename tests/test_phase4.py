@@ -291,3 +291,50 @@ def test_small_screenshots_are_read_at_double_size(h):
     PILImage.new("RGB", (400, 300), "white").save(buf, "PNG")
     a = svc.process(buf.getvalue(), "s.png", h.fresh_employee())
     assert seen == [(600, 800)] and a["secrets_blurred"] == 1  # read at 2x, blur box mapped back onto 400x300
+
+def _mid_vpn_fix(h, emp):
+    sid = h.new_session(emp)
+    r = h.answer_until_attempt(emp, sid, "VPN error 809 when I connect from home, only me affected")
+    assert r.get("attempt"), r["reply"]
+    return sid, r["ticket_id"]
+
+
+def _send_shot(h, emp, sid, text=""):
+    a = _upload(h, emp, _png(), session_id=sid).json()
+    return h.c.post("/chat", json={"session_id": sid, "message": text, "attachment_ids": [a["id"]]},
+                    headers=h.login(emp)).json()
+
+
+def test_screenshot_of_a_different_problem_is_questioned_not_acted_on(h, ocr):
+    """Regression (3 Oct): a printer-jam screenshot sent during a VPN fix opened and escalated a printer ticket."""
+    from servicedesk.orchestrator import CARRY_ON, SEPARATE_PROBLEM, WRONG_SHOT
+    emp = h.fresh_employee()
+    sid, tid = _mid_vpn_fix(h, emp)
+    ocr(("HP LaserJet - Floor3-HP-01", 0.98), ("Error: Paper jam in Tray 2 of the printer", 0.97))
+    r = _send_shot(h, emp, sid)
+    assert "Paper jam" in r["reply"] and tid in r["reply"]
+    assert r["quick_replies"] == [WRONG_SHOT, SEPARATE_PROBLEM, CARRY_ON]
+    assert len(h.api.store.tickets(employee_id=emp)) == 1  # nothing opened or escalated yet
+    r = h.chat(emp, sid, WRONG_SHOT)
+    assert "Attach the right one" in r["reply"] and "Yes, it's fixed" in r["quick_replies"]
+    assert h.ticket(tid)["status"].startswith("WAITING_FOR_VALIDATION")
+
+
+def test_separate_problem_from_a_screenshot_keeps_the_first_ticket(h, ocr):
+    from servicedesk.orchestrator import SEPARATE_PROBLEM
+    emp = h.fresh_employee()
+    sid, tid = _mid_vpn_fix(h, emp)
+    ocr(("Error: Paper jam in Tray 2 of the printer", 0.97))
+    _send_shot(h, emp, sid)
+    r = h.chat(emp, sid, SEPARATE_PROBLEM)
+    assert f"Your **{tid}** ticket stays open" in r["reply"]
+    assert h.ticket(tid)["status"].startswith("WAITING_FOR_VALIDATION")
+
+
+def test_image_without_text_is_described_honestly(h, ocr):
+    ocr()  # OCR finds nothing at all: a photo, not a screen
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = _send_shot(h, emp, sid)
+    assert "couldn't find any text" in r["reply"] and "What's going wrong?" in r["reply"]
+    assert "Hi!" not in r["reply"] and not r["ticket_id"]

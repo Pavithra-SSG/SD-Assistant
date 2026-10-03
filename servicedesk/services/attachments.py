@@ -211,8 +211,13 @@ def summary_for_bot(atts: list[dict]) -> tuple[str, str]:
             if key and not (a["error_codes"] and any(c in key[0] for c in a["error_codes"])):
                 notes.append(f"Your screenshot says _\"{key[0][:140]}\"_.")
             elif not key and not a["error_codes"]:
-                notes.append("I've read your screenshot, but I couldn't spot an error message in it. If there is "
-                             "one, could you type it exactly as it appears?")
+                first = next((ln for ln in lines if len(ln) >= 8), "")
+                shows = f"Your screenshot shows _\"{first[:90]}\"_, but" if first else "I've read your screenshot, but"
+                notes.append(f"{shows} I couldn't spot an error message in it, so I'll go by what you've told me. "
+                             "If there is an error on screen, please type it exactly as it appears.")
+        elif not (a["ocr_text"] or "").strip():
+            notes.append("I couldn't find any text in that image. If you meant to show an error, a screenshot "
+                         "works best (on Windows press **Win + Shift + S**), or just type the message you see.")
         else:
             notes.append("I couldn't read your screenshot clearly (photos of a screen are often hard to read). "
                          "If there's an error message, could you type it exactly as it appears?")
