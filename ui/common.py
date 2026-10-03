@@ -180,10 +180,24 @@ def alert_center() -> None:
         if fresh:
             ss.p1_modal = fresh[0]["alert_id"]
     current = next((a for a in p1 if a["alert_id"] == ss.get("p1_modal")), None)
+    if not current:
+        ss.p1_modal = None
+    # The dialog itself is drawn by p1_dialog() from the main page on each full run. Opening it from this
+    # 10-second check stacked a new copy on every check and on every re-alert (4 Oct). Here we only notice a new
+    # alert or re-alert (or one that's gone) and reload the page once so it's drawn fresh, exactly once.
+    key = (current["alert_id"], current["realert_count"]) if current else None
+    ss.p1_current = current
+    if ss.get("p1_dialog_shown") != key:
+        ss.p1_dialog_shown = key
+        st.rerun(scope="app")
+
+
+def p1_dialog() -> None:
+    """Call from the main page (not a fragment) after alert_center(): shows the due P1 alert, if any. Drawn on
+    every full run while it's due, so its buttons work and there's never more than one."""
+    current = st.session_state.get("p1_current")
     if current:
         _p1_dialog(current)
-    else:
-        ss.p1_modal = None
 
 
 @st.fragment(run_every="10s")

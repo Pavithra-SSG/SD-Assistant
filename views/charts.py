@@ -17,7 +17,7 @@ cats = {c["id"]: c["name"] for c in meta["categories"]}
 st.markdown("## Service desk charts" if user["role"] == "supervisor" else "## My queues at a glance")
 
 # ------------------------------------------------------------------ filters: one row above the charts
-f = st.columns([2, 2, 2, 2, 2])
+f = st.columns([3, 2, 2, 2, 2])  # the date range needs the room, or the end date is cut off
 rng = f[0].date_input("Dates", (date.today() - timedelta(days=30), date.today()), max_value=date.today())
 qs = f[1].multiselect("Queue", user["queues"] if user["role"] == "agent" else meta["queues"])
 cs = f[2].multiselect("Category", list(cats), format_func=cats.get)
@@ -41,7 +41,7 @@ t[2].metric("Awaiting a human", k["awaiting_human"])
 t[3].metric("Bot resolution rate", pct(k["bot_resolution_rate"]))
 t[4].metric("SLA met", pct(k["sla_met_pct"]))
 t[5].metric("Reopen rate", pct(k["reopen_rate"]))
-f = st.columns(6)
+f = st.columns(4)  # wider than the 6-column row above, so "Answers rated helpful" isn't cut off
 f[0].metric("Answers rated helpful", pct(k.get("answers_helpful_pct")),
             help=f"👍 share of {k.get('answer_ratings', 0)} ratings employees gave the bot's answers")
 f[1].metric("Satisfaction", f"{k['satisfaction']:.1f} / 5" if k.get("satisfaction") else "—",

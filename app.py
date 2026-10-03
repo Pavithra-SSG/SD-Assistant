@@ -8,7 +8,7 @@ import streamlit as st
 from servicedesk import config
 from ui import client, win_quiet
 from ui.client import ApiError
-from ui.common import alert_center, inject_css, notifications, sidebar_badges
+from ui.common import alert_center, inject_css, notifications, p1_dialog, sidebar_badges
 
 win_quiet.install()  # a closed browser tab no longer prints a WinError 10054 traceback on Windows
 
@@ -106,6 +106,7 @@ pages["Account"] = account
 nav = st.navigation(pages)
 if role != "employee":
     alert_center()  # before the sidebar, so the badges below show this poll's counts
+    p1_dialog()  # the P1 dialog, drawn by the page itself (never from the 10-second check)
 
 with st.sidebar:
     st.markdown(f"**{user['name']}**  \n<span class='muted'>{user['user_id']} · "

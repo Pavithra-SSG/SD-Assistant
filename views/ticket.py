@@ -98,10 +98,14 @@ with b[3].popover("Resolve ticket", width="content",
     notes = st.text_area("Resolution notes", key=f"{key}-notes", placeholder="What fixed it, in a sentence or two")
     open_items = [c for c in req if not c["done_at"]]
     missing = [c["text"] for c in open_items] + ([] if notes.strip() else ["Resolution notes"])
-    if open_items:  # tick them here; the same items are in the Checklist section below
-        st.caption("Tick the required checks you've done:")
-        for c in open_items:
-            if st.checkbox(c["text"], key=f"{key}-rchk-{c['item_id']}"):
+    if req:  # tick them here (also in the Checklist section below); done ones stay listed, ticked, so nothing jumps
+        st.caption(f"Required checks ({req_done} of {len(req)} done):")
+        for c in req:
+            done = bool(c["done_at"])
+            # the key includes the saved state: each item is also in the Checklist section below, and a widget
+            # remembering an old value there un-ticked what was ticked here, endlessly (4 Oct)
+            if st.checkbox(c["text"], value=done, disabled=done, key=f"{tid}-rchk-{c['item_id']}-{done}") \
+                    and not done:
                 act(f"/tickets/{tid}/checklist/{c['item_id']}", {"done": True})
     if missing:
         st.caption("Resolve unlocks when these are done: " +
@@ -227,7 +231,9 @@ with st.container(border=True):
     cols = st.columns(2)
     for i, c in enumerate(checklist):
         label = c["text"] + ("" if c["required"] else " (optional)")
-        done = cols[i % 2].checkbox(label, value=bool(c["done_at"]), key=f"{key}-chk-{c['item_id']}",
+        # keyed on the saved state too, so it always shows what the server has (see the Resolve popover above)
+        done = cols[i % 2].checkbox(label, value=bool(c["done_at"]),
+                                    key=f"{tid}-chk-{c['item_id']}-{bool(c['done_at'])}",
                                     disabled=not can_work or t["status"] != "HUMAN_IN_PROGRESS")
         if done != bool(c["done_at"]):
             act(f"/tickets/{tid}/checklist/{c['item_id']}", {"done": done})
