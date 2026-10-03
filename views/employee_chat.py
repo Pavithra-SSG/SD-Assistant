@@ -14,9 +14,10 @@ chat_sessions = [s for s in sessions if not s["session_id"].startswith("form-")]
 if ss.get("chat_sid") is None:
     ss.chat_sid = (chat_sessions[0]["session_id"] if chat_sessions else client.post("/chat/sessions")["session_id"])
 
-head, new = st.columns([5, 1])
-head.markdown("## How can IT help?")
-if new.button("New conversation", width="stretch"):
+with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
+    st.markdown("## How can IT help?")
+    new_chat = st.button("New conversation", width="content")
+if new_chat:
     ss.chat_sid = client.post("/chat/sessions")["session_id"]
     st.rerun()
 
@@ -100,14 +101,17 @@ if ss.get("empty_chat"):
                "of the error with the 📎 button.")
     starters = ["My VPN won't connect", "I forgot my password", "Outlook isn't sending email",
                 "I think I got a phishing email"]
-    for c, s in zip(st.columns(len(starters)), starters):
-        if c.button(s, width="stretch"):
-            send(s)
+    # buttons size to their text and wrap to a new line, so a label is never cut off
+    with st.container(horizontal=True, gap="small"):
+        for s in starters:
+            if st.button(s, width="content"):
+                send(s)
 elif ss.get("last_bot") and ss.last_bot.get("quick_replies"):
     qr = ss.last_bot["quick_replies"]
-    for i, (c, q) in enumerate(zip(st.columns(len(qr)), qr)):
-        if c.button(q, key=f"qr-{ss.last_bot['id']}-{i}", width="stretch"):
-            send(q)
+    with st.container(horizontal=True, gap="small"):
+        for i, q in enumerate(qr):
+            if st.button(q, key=f"qr-{ss.last_bot['id']}-{i}", width="content"):
+                send(q)
 
 entry = st.chat_input("Describe your issue, or attach a screenshot. Never share passwords or codes.",
                       accept_file="multiple", file_type=["png", "jpg", "jpeg", "webp"])

@@ -24,6 +24,14 @@ def test_security_incidents_run_around_the_clock():
     assert bh.add_hours(sat, 1, "P2", "CAT-06").astimezone(ist).weekday() == 0  # email waits for Monday
 
 
+def test_locked_out_of_sign_in_or_mfa_never_waits_for_monday():
+    """Regression (3 Oct): a P3 password reset escalated on Saturday said 'first reply by 1:00 pm on Monday'."""
+    ist = bh._calendar()[0]
+    sat_3pm = datetime(2026, 10, 3, 15, 0, tzinfo=ist).astimezone(timezone.utc)
+    for cat in ("CAT-01", "CAT-05"):
+        assert bh.add_hours(sat_3pm, 4, "P3", cat).astimezone(ist) == datetime(2026, 10, 3, 19, 0, tzinfo=ist)
+
+
 def test_error_details_offer_buttons_and_a_way_to_type():
     outlook = {"Category_ID": "CAT-06", "Field_Name": "error_or_symptom", "UI_Control": "textarea",
                "Options_or_Source": "Describe what happens", "Help_Text": "Exact behavior or error"}

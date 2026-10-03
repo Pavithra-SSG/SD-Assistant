@@ -276,7 +276,7 @@ servicedesk/
 views/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
 ui/                 API client, shared styles, charts
 datasets/           28 JSON datasets (KB, routing, SLA, priority matrix, synthetic employees)
-tests/              83 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
+tests/              84 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
 deploy/  Dockerfile  docker-compose.yml  .github/workflows/  (ci.yml, cd.yml)
 docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · images
 ```
@@ -286,7 +286,7 @@ docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · 
 ## Tests and evaluation
 
 ```powershell
-python -m pytest tests -q                    # 83 checks, offline (mock brain), about 1 minute
+python -m pytest tests -q                    # 84 checks, offline (mock brain), about 1 minute
 $env:TEST_DATABASE_URL="postgresql://postgres:pw@localhost:5432/empty_db"; python -m pytest tests -q   # same on Postgres
 python evaluate.py --runs 2                  # live Jev: 43 chat cases, twice, model pinned
 python evaluate.py --mode form               # ticket-form cases
