@@ -78,27 +78,27 @@ role = user["role"]
 
 if user.get("must_change_password"):  # after a temporary password nothing else works until it is changed
     _no_sidebar()
-    st.navigation([st.Page("pages/account.py", title="Set your password", icon="🔑")], position="hidden").run()
+    st.navigation([st.Page("views/account.py", title="Set your password", icon="🔑")], position="hidden").run()
     st.stop()
 
 if role == "employee":
-    pages = {"Get help": [st.Page("pages/employee_chat.py", title="Chat", icon="💬", default=True),
-                          st.Page("pages/employee_form.py", title="Ticket form", icon="📝"),
-                          st.Page("pages/my_tickets.py", title="My tickets", icon="🎫")]}
+    pages = {"Get help": [st.Page("views/employee_chat.py", title="Chat", icon="💬", default=True),
+                          st.Page("views/employee_form.py", title="Ticket form", icon="📝"),
+                          st.Page("views/my_tickets.py", title="My tickets", icon="🎫")]}
 else:
-    work = [st.Page("pages/queue.py", title="My queue", icon="📥", default=True),
-            st.Page("pages/ticket.py", title="Ticket", icon="🎫"),
-            st.Page("pages/bot_answers.py", title="Bot answers log", icon="🤖"),
-            st.Page("pages/knowledge.py", title="Knowledge", icon="📚")]
-    insight = [st.Page("pages/charts.py", title="Charts", icon="📊"),
-               st.Page("pages/performance.py", title="Agent performance", icon="🏁"),
-               st.Page("pages/shift.py", title="Shift", icon="🕘")]
+    work = [st.Page("views/queue.py", title="My queue", icon="📥", default=True),
+            st.Page("views/ticket.py", title="Ticket", icon="🎫"),
+            st.Page("views/bot_answers.py", title="Bot answers log", icon="🤖"),
+            st.Page("views/knowledge.py", title="Knowledge", icon="📚")]
+    insight = [st.Page("views/charts.py", title="Charts", icon="📊"),
+               st.Page("views/performance.py", title="Agent performance", icon="🏁"),
+               st.Page("views/shift.py", title="Shift", icon="🕘")]
     if role == "supervisor":
-        insight.append(st.Page("pages/corrections.py", title="Corrections log", icon="✏️"))
+        insight.append(st.Page("views/corrections.py", title="Corrections log", icon="✏️"))
     pages = {"Work": work, "Insight": insight}
-account = [st.Page("pages/account.py", title="My account", icon="🔑")]
+account = [st.Page("views/account.py", title="My account", icon="🔑")]
 if role == "supervisor":
-    account.append(st.Page("pages/users.py", title="User accounts", icon="👥"))
+    account.append(st.Page("views/users.py", title="User accounts", icon="👥"))
 pages["Account"] = account
 
 nav = st.navigation(pages)

@@ -273,7 +273,7 @@ servicedesk/
   services/         tickets · auth · alerts · notify · analytics · kb · attachments (OCR) · privacy
   tools.py          simulated IT tools (swap point for real AD/Intune/ITSM)
 
-pages/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
+views/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
 ui/                 API client, shared styles, charts
 datasets/           28 JSON datasets (KB, routing, SLA, priority matrix, synthetic employees)
 tests/              77 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality

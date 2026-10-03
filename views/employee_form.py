@@ -33,7 +33,7 @@ if ss.get("form_result"):
             else:
                 ss.chat_sid = out["session_id"]
                 reset()
-                st.switch_page("pages/employee_chat.py")
+                st.switch_page("views/employee_chat.py")
         if c2.button("Just log it for the team", width="stretch"):
             try:
                 out = client.post(f"/forms/{res['ticket_id']}/choice", {"choice": "just_log"})
@@ -47,7 +47,7 @@ if ss.get("form_result"):
     b1, b2 = st.columns(2)
     if b1.button("Open My tickets", width="stretch"):
         reset()
-        st.switch_page("pages/my_tickets.py")
+        st.switch_page("views/my_tickets.py")
     if b2.button("Report another issue", width="stretch"):
         reset()
         st.rerun()

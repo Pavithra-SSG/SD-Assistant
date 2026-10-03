@@ -111,7 +111,7 @@ def error(e: ApiError) -> None:
 def open_ticket(tid: str) -> None:
     st.session_state.open_ticket = tid
     st.session_state.pop("queue_table", None)  # forget the row selection, or the queue would reopen it
-    st.switch_page("pages/ticket.py")
+    st.switch_page("views/ticket.py")
 
 
 # ------------------------------------------------------------------ support: live alerts (spec §6.5)

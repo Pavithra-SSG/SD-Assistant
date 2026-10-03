@@ -58,7 +58,7 @@ with right:
         st.rerun()
     if t["bot_active"] and t["session_id"] and b[1].button("Continue in chat", width="stretch"):
         ss.chat_sid = t["session_id"]
-        st.switch_page("pages/employee_chat.py")
+        st.switch_page("views/employee_chat.py")
     if t["can_cancel"]:
         with b[2].popover("Cancel ticket", width="stretch"):
             why = st.text_input("Why cancel?", key=f"cancel-{t['ticket_id']}")
