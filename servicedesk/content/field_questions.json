@@ -1,0 +1,73 @@
+{
+  "_about": "How the assistant asks for each detail. Key: <Category_ID>.<Field_Name>. 'ask' is the question; 'options' become buttons (the dataset's own dropdown options are used when there are none here). 'type_own' adds a 'Something else, I'll type it' button. 'from_profile' fills the field from the signed-in employee's profile instead of asking.",
+
+  "CAT-01.employee_id": {"from_profile": "Employee_ID"},
+  "CAT-01.account_username": {"from_profile": "username"},
+  "CAT-01.last_successful_login": {"ask": "When did you last sign in successfully?",
+    "options": ["Today", "Yesterday", "Earlier this week", "More than a week ago", "Not sure"]},
+  "CAT-01.mfa_still_working": {"ask": "Does your authenticator app (MFA) still work on your phone?",
+    "options": ["Yes", "No", "Not sure"]},
+
+  "CAT-02.error_message": {"ask": "What happens when the VPN fails to connect?",
+    "options": ["It times out or keeps trying", "Username or password error", "It shows an error code",
+                "It connects, then drops", "Connected, but nothing loads"], "type_own": true},
+  "CAT-02.os_version": {"ask": "Which operating system is your laptop on?"},
+  "CAT-02.vpn_client_version": {"ask": "Do you know the VPN app's version? You'll find it under Help → About.",
+    "options": ["I don't know"], "type_own": true},
+  "CAT-02.last_successful_connect": {"ask": "When did the VPN last work for you?",
+    "options": ["Earlier today", "Yesterday", "Earlier this week", "More than a week ago", "It has never worked"]},
+  "CAT-02.location_type": {"ask": "Where are you connecting from?"},
+
+  "CAT-03.software_name": {"ask": "Which software do you need? Please give the exact name, for example Adobe Photoshop or Tableau."},
+  "CAT-03.business_justification": {"ask": "In a sentence, what do you need it for? Your manager sees this when approving."},
+  "CAT-03.preferred_version": {"ask": "Do you need a particular version?",
+    "options": ["The latest version is fine"], "type_own": true},
+
+  "CAT-04.asset_tag": {"from_profile": "Asset_Tag",
+    "ask": "What's the asset tag on the device? It's on a sticker, for example LT-12345."},
+  "CAT-04.device_type": {"ask": "Which device is it?"},
+  "CAT-04.symptoms": {"ask": "What's happening with it?",
+    "options": ["It won't turn on", "Very slow or freezing", "Screen problem", "Keyboard or mouse not working",
+                "Battery or charging problem", "Physical damage"], "type_own": true},
+  "CAT-04.location": {"ask": "Where is the device right now? Floor and desk, or city if you're remote."},
+
+  "CAT-05.mfa_method": {"ask": "Which sign-in method is failing?"},
+  "CAT-05.device_change": {"ask": "Have you changed or reset your phone recently?"},
+  "CAT-05.backup_codes_available": {"ask": "Do you still have your backup codes?", "options": ["Yes", "No", "Not sure"]},
+
+  "CAT-06.client": {"ask": "Which email app are you using?"},
+  "CAT-06.error_or_symptom": {"ask": "What exactly is going wrong?",
+    "options": ["Emails stuck in the Outbox", "An error message appears", "Sent, but people don't receive it",
+                "Not receiving new email", "Outlook won't open or keeps crashing", "Mailbox full warning"],
+    "type_own": true},
+  "CAT-06.mailbox_size_known": {"ask": "Have you seen a 'mailbox almost full' warning?", "options": ["Yes", "No", "Not sure"]},
+
+  "CAT-07.application_name": {"ask": "Which application do you need access to? For example Salesforce, Jira or Confluence."},
+  "CAT-07.requested_role": {"ask": "What level of access do you need?",
+    "options": ["Viewer (read only)", "Editor", "Admin", "Not sure"]},
+  "CAT-07.manager_approval": {"ask": "Has your manager already approved this?"},
+
+  "CAT-08.connection_type": {"ask": "How are you connected?"},
+  "CAT-08.affected_sites": {"ask": "What isn't working?",
+    "options": ["Nothing loads at all", "Only some websites or apps", "Only internal company sites",
+                "Everything is very slow", "It keeps disconnecting"], "type_own": true},
+  "CAT-08.others_affected": {"ask": "Is anyone else around you having the same problem?"},
+
+  "CAT-09.incident_type": {"ask": "What kind of security concern is it?"},
+  "CAT-09.email_headers_or_screenshot": {"ask": "If you can, attach a screenshot of the message with the + button. Otherwise, choose Skip.",
+    "options": ["Skip"]},
+  "CAT-09.actions_already_taken": {"ask": "Have you done anything with it so far?",
+    "options": ["Nothing yet", "I clicked a link", "I entered my password", "I opened an attachment",
+                "I replied to it", "I reported or deleted it"], "type_own": true},
+
+  "CAT-10.printer_name_or_id": {"ask": "Which printer is it? The name is on its label, for example Floor3-HP-01."},
+  "CAT-10.error_code": {"ask": "What does the printer or your screen show?",
+    "options": ["Printer offline", "Paper jam", "Out of paper or toner", "Prints blank or garbled pages",
+                "Nothing happens"], "type_own": true},
+
+  "CAT-11.tool_name": {"ask": "Which app is it?"},
+  "CAT-11.issue_type": {"ask": "What's the main problem?"},
+
+  "CAT-12.device_os": {"ask": "Is your phone an iPhone or Android?"},
+  "CAT-12.issue_type": {"ask": "What do you need help with?"}
+}

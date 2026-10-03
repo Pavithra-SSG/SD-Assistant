@@ -48,7 +48,7 @@ def test_attempts_use_the_approved_employee_version(h):
     r = h.answer_until_attempt(emp, sid, "VPN error 809 when I connect from home, only me affected")
     assert r["attempt"] == 1 and r["can_rate"]
     text = r["reply"]
-    assert "1. " in text and "Why this helps" in text and "fix 1 of 2" in text
+    assert "1. " in text and "Why this helps" in text and "one more thing to try" in text
     for agent_only in ("Confirm scope", "Retrieve the best evidence", "TOOL-", "Before you start"):
         assert agent_only not in text
 
@@ -213,7 +213,7 @@ def test_business_hours_calendar(monkeypatch, tmp_path):
     fri_5pm = datetime(2026, 10, 2, 17, 0, tzinfo=ist).astimezone(timezone.utc)
     assert bh.add_hours(fri_5pm, 4, "P3").astimezone(ist) == datetime(2026, 10, 5, 12, 0, tzinfo=ist)  # over the weekend
     assert bh.add_hours(fri_5pm, 4, "P1").astimezone(ist) == datetime(2026, 10, 2, 21, 0, tzinfo=ist)  # 24x7
-    assert bh.friendly(bh.add_hours(fri_5pm, 4, "P3"), fri_5pm) == "by 12:00 pm on Monday"
+    assert bh.friendly(bh.add_hours(fri_5pm, 4, "P3"), fri_5pm) == "by 12:00 pm on Monday, 5 Oct"
     sat = datetime(2026, 10, 3, 10, 0, tzinfo=ist).astimezone(timezone.utc)
     assert bh.add_hours(sat, 1, "P2").astimezone(ist) == datetime(2026, 10, 5, 10, 0, tzinfo=ist)
     hol = tmp_path / "holidays.txt"

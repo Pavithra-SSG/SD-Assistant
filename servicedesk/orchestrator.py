@@ -18,7 +18,9 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 
+from . import business_hours as bh
 from . import config, tools
 from .brain import BrainError, FormCheck, form_text, make_brain
 from .directory import employee_profile
@@ -45,6 +47,8 @@ _NON_USER_PRESTEP = re.compile(r"TOOL-|^Collect|^Ask |^Retrieve|^Confirm scope|^
 _SECRET_PATTERN = re.compile(r"(?i)\b(password|passcode|pwd|otp|one[- ]time code|code|pin|api[_ -]?key|token)"
                              r"(\s*(is|was|=|:)\s*)(\S{4,})")
 HIDDEN = "[message hidden: it appeared to contain a password or code]"
+_TIMING_QUESTION = re.compile(r"(?i)\b(when|which (day|date|monday|tuesday|wednesday|thursday|friday|saturday|"
+                              r"sunday)|what (time|day|date)|exact (date|time|day)|eta|how long)\b")
 
 
 @dataclass
@@ -86,6 +90,42 @@ def _pct(p: float) -> str:
 
 def _numbered(steps: list[str]) -> str:
     return "\n".join(f"{i}. {s}" for i, s in enumerate(steps, 1))
+
+
+TYPE_OWN = "Something else, I'll type it"
+PRIORITY_WORD = {"P1": "critical", "P2": "high", "P3": "medium", "P4": "low"}
+_FIELD_QUESTIONS: dict = json.loads((Path(__file__).parent / "content" / "field_questions.json")
+                                    .read_text(encoding="utf-8"))
+# what the employee does after a verified tool action (the tool result says what was done, not what's next)
+_AFTER_ACTION = {"KB-002": "Open that link, choose a new password, then sign in again.",
+                 "KB-003": "Try signing in again now.",
+                 "KB-016": "Open the MFA setup portal and scan the new QR code with your authenticator app."}
+
+
+def _field_spec(f: dict) -> dict:
+    return _FIELD_QUESTIONS.get(f"{f.get('Category_ID')}.{f['Field_Name']}", {})
+
+
+def field_question(f: dict) -> tuple[str, list[str]]:
+    """(question, answer buttons) for a detail the assistant needs. Wording and options come from
+    content/field_questions.json; the dataset's dropdown options are the fallback."""
+    spec = _field_spec(f)
+    ask = spec.get("ask") or f["Help_Text"].rstrip(" .?") + "?"
+    opts = list(spec.get("options") or ([o.strip() for o in f["Options_or_Source"].split("|")]
+                                        if f["UI_Control"] in ("dropdown", "yes_no") else []))
+    if spec.get("type_own"):
+        opts.append(TYPE_OWN)
+    if not opts and not spec.get("ask") and f.get("Options_or_Source"):
+        ask += f"\n\n_For example: {f['Options_or_Source']}_"
+    return ask, opts
+
+
+def profile_answer(f: dict, employee: dict) -> str | None:
+    """Details we already know about the signed-in employee are never asked for."""
+    src = _field_spec(f).get("from_profile")
+    if src == "username":
+        return (employee.get("Email") or "").split("@")[0] or None
+    return employee.get(src) if src else None
 
 
 class ConversationService:
@@ -157,6 +197,9 @@ class ConversationService:
                 reply = self._on_field_answer(message)
             elif stage == "VALIDATING":
                 reply = self._on_validation(message)
+            elif stage == "ESCALATED" and st.get("ticket_id") and (message in VALIDATION_REPLIES
+                                                                  or _TIMING_QUESTION.search(message)):
+                reply = self._after_handoff()  # old buttons or "when / which Monday?" are about this ticket
             elif message == OPEN_TICKET and st.get("pending_issue"):
                 reply = self._triage(st["pending_issue"], force_ticket=True)
             elif message == PERSON_PLEASE and st.get("language_note"):
@@ -400,14 +443,46 @@ class ConversationService:
         return Reply(f"{text}\n\nIf this is happening to you right now, I can open a ticket and walk you "
                      "through it step by step.", quick_replies=[OPEN_TICKET, "Thanks!"], meta=self._rate(aid))
 
+    def _after_handoff(self) -> Reply:
+        """The ticket from this chat is with a team: say exactly where it is and when to expect them."""
+        t = self.tickets.get(self._st["ticket_id"])
+        sla = self.tickets.sla_status(t) if t["status"] not in ("RESOLVED", "CLOSED", "CANCELLED") else {}
+        tz = datetime.now(timezone.utc).astimezone(bh._calendar()[0]).strftime("%Z")
+        if t["status"] == "ESCALATION_QUEUED":
+            head = f"**{t['ticket_id']}** is with the **{t['queue']}** team."
+            when = f"You can expect their first reply **{sla['response_eta']}** ({tz})." if sla.get("response_eta") else ""
+        else:
+            head = f"**{t['ticket_id']}**: {employee_label(t, self.tickets.user_name(t['owner']))}."
+            when = (f"They're aiming to have it fixed **{sla['resolve_eta']}** ({tz})."
+                    if t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS") and sla.get("resolve_eta") else "")
+        return Reply(" ".join(filter(None, [head, when])) + "\n\nIf anything has changed, such as a new error "
+                     "message, just describe it here or attach a screenshot.")
+
     def _ticket_status(self) -> Reply:
-        ts = self.store.tickets(employee_id=self._employee["Employee_ID"])[:6]
+        """Answers "where's my ticket?", "which Monday?", "give the exact date": every open ticket with an
+        exact date and time, the one from this conversation first."""
+        ts = sorted(self.store.tickets(employee_id=self._employee["Employee_ID"]),
+                    key=lambda t: t["created_at"] or "", reverse=True)
+        current = self._st.get("ticket_id")
+        ts = sorted(ts, key=lambda t: t["ticket_id"] != current)[:6]
         if not ts:
-            return Reply("You don't have any tickets yet.")
-        lines = [f"- **{t['ticket_id']}** · {self.k.name(t['category_id'])} · {t['priority']} · "
-                 f"{employee_label(t, self.tickets.user_name(t['owner']))}" for t in ts]
-        return Reply("Here's where your tickets stand (you'll find the full detail under **My tickets**):\n\n"
-                     + "\n".join(lines))
+            return Reply("You don't have any tickets yet. Tell me what's wrong and I'll help.")
+        lines = []
+        for t in ts:
+            when = ""
+            if t["status"] not in ("RESOLVED", "CLOSED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION"):
+                sla = self.tickets.sla_status(t)
+                if t["status"] == "ESCALATION_QUEUED" and sla.get("response_eta"):
+                    when = f"\n  First reply expected **{sla['response_eta']}**."
+                elif t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS") and sla.get("resolve_eta"):
+                    when = f"\n  Target to fix: **{sla['resolve_eta']}**."
+            mark = " _(this conversation)_" if t["ticket_id"] == current else ""
+            lines.append(f"- **{t['ticket_id']}**{mark}: {self.k.name(t['category_id'])}, "
+                         f"{t['priority']} ({PRIORITY_WORD.get(t['priority'], 'normal')}). "
+                         f"{employee_label(t, self.tickets.user_name(t['owner']))}.{when}")
+        tz = datetime.now(timezone.utc).astimezone(bh._calendar()[0]).strftime("%Z")
+        return Reply(f"Here's where your tickets stand. Times are {tz}.\n\n" + "\n".join(lines)
+                     + "\n\nYou'll find every detail under **My tickets**.")
 
     # ================================================================ ticket planning
     def _open_ticket(self, cat: str, **extra) -> str:
@@ -511,14 +586,21 @@ class ConversationService:
         kb_id = max(g.kb_scores, key=lambda k: g.kb_scores[k]) if g.kb_scores else "KB-024"
         self._st["kb_id"] = kb_id
         self.store.update_ticket(self._st["ticket_id"], kb_id=kb_id)
-        guidance = {
-            "KB-024": "Don't click any links or open attachments in that message, and don't reply to it.",
-            "KB-025": "Treat your account as exposed: don't sign in anywhere else with that password. "
-                      "Security will reset your password and MFA after verifying you.",
-        }.get(kb_id, "Don't take further action on the suspicious item.")
-        self._record_answer(self.k.kb[kb_id], 0, guidance, ticket_id=self._st["ticket_id"], outcome="escalated")
+        steps = {
+            "KB-024": ["Don't click any links or open attachments in that message.",
+                       "Don't reply to it or forward it to colleagues.",
+                       "If you've already clicked a link or entered your password, tell me now so we can treat "
+                       "it as urgent."],
+            "KB-025": ["Treat your account as exposed: don't use that password anywhere else.",
+                       "Stay signed out of anything that asks for it again.",
+                       "Security will reset your password and MFA after verifying it's you."],
+        }.get(kb_id, ["Don't take any further action on the suspicious item.",
+                      "Keep it as it is, so Security can look at it."])
+        self._record_answer(self.k.kb[kb_id], 0, " ".join(steps), ticket_id=self._st["ticket_id"],
+                            outcome="escalated")
         return self._escalate(f"Security incident — no resolution attempt, SOC handoff ({kb_id}).",
-                              f"🛡️ **{guidance}**")
+                              "Thank you for reporting this. Flagging it quickly is the right call.\n\n"
+                              "🛡️ **Until Security gets back to you:**\n" + "\n".join(f"- {s}" for s in steps))
 
     def _gap(self, category_id: str, question: str, best: tuple) -> None:
         """Knowledge gap: a real question no article answered. Reviewed weekly on the Knowledge page."""
@@ -562,6 +644,12 @@ class ConversationService:
                 missing.remove(f)
                 st["answers"][f["Field_Name"]] = shown
                 self._t("Understand", f"{f['Field_Name']} taken from the screenshot")
+        for f in list(missing):  # never ask a signed-in employee for their own ID, username or asset tag
+            known = profile_answer(f, self._employee)
+            if known:
+                missing.remove(f)
+                st["answers"][f["Field_Name"]] = known
+                self._t("Understand", f"{f['Field_Name']} taken from the employee profile")
         if g.field_provided:
             given = [f for f, p in g.field_provided.items() if p >= config.FIELD_PROVIDED_THRESHOLD]
             self._t("Understand", f"details already given: {given or 'none'}; will ask: "
@@ -586,10 +674,12 @@ class ConversationService:
             if status == "CLASSIFYING":
                 self._to("COLLECTING_INFORMATION", "Category/scope not complete")
             self._to("WAITING_FOR_USER", "Question sent")
-            opts = [o.strip() for o in f["Options_or_Source"].split("|")] if f["UI_Control"] in (
-                "dropdown", "yes_no") else []
-            hint = "" if opts else f" _(e.g. {f['Options_or_Source']})_"
-            return Reply(f"Quick question so I can help: **{f['Help_Text']}**{hint}", quick_replies=opts)
+            ask, opts = field_question(f)
+            first = st.get("asked_on") != st["ticket_id"]
+            st["asked_on"] = st["ticket_id"]
+            lead = ("To point you to the right fix, I need a couple of details first.\n\n" if first
+                    else "Thanks. ")
+            return Reply(f"{lead}**{ask}**", quick_replies=opts)
         if status in ("CLASSIFYING", "COLLECTING_INFORMATION"):
             self._to("READY_FOR_RESOLUTION", "Required context complete")
         return self._act()
@@ -601,6 +691,9 @@ class ConversationService:
         if self._risky(flags, "security_incident") or self._risky(flags, "physical_safety"):
             st["stage"] = "IDLE"
             return self._triage(message)
+        if message == TYPE_OWN:  # same question stays open for their own words
+            return Reply("Sure, please type it as close as you can to what you see on screen. A screenshot "
+                         "works too: use the **+** button.")
         f = st.pop("current_field", None)
         self._to("COLLECTING_INFORMATION", "Answer received")
         if f:
@@ -674,17 +767,18 @@ class ConversationService:
         ev = self.kbs.live(kb.kb_id)
         if who == "it":  # only IT can do this step: explain what happens next instead of instructing
             self._t("Solve", f"attempt {n} of {kb.kb_id} is a team action → hand to the team")
-            lead = ev["summary"] if ev and n == 1 else ("Thanks for trying that." if n == 2 else "")
+            lead = (ev["summary"] if ev and n == 1
+                    else "Thanks for trying that. The next step is one for our IT team:" if n == 2 else "")
             return self._escalate(f"{kb.kb_id} attempt {n} needs a team action: {action}",
                                   f"{lead}\n\n{body}".strip())
         if n == 1:
             opener = ev["summary"] if ev else "Let's get this sorted."
-            closing = (f"Did that fix it?\n\n_This is fix 1 of {config.MAX_ATTEMPTS}. If it doesn't work, I'll try "
-                       "one more thing, then bring in a person._")
+            closing = ("**Did that fix it?**\n\n_If not, I have one more thing to try before bringing in someone "
+                       "from IT._")
         else:
-            opener = "Thanks for trying that. Let's try one more thing."
-            closing = ("Did that do it?\n\n_If this doesn't work either, I'll bring in a person, and they'll see "
-                       "everything we've tried, so you won't have to explain it again._")
+            opener = "Thanks for trying that. Here's one more thing to try."
+            closing = ("**Did that fix it?**\n\n_If not, I'll pass this to the IT team with everything we've tried, "
+                       "so you won't need to explain it again._")
         text = f"{opener}\n\n{body}\n\n{closing}"
         st["steps_tried"].append({"attempt": n, "kb": kb.kb_id, "action": action,
                                   "kb_version": ev["version"] if ev else None})
@@ -724,12 +818,15 @@ class ConversationService:
         st.update(attempt=attempt, stage="VALIDATING", last_instructions=f"{label} was completed. {extra}")
         self._to(f"WAITING_FOR_VALIDATION_{attempt}", "Action executed", verification="V2 VERIFIED")
         self._record_answer(kb, attempt, action, ticket_id=st["ticket_id"])
-        ev = self.kbs.live(kb.kb_id)
-        lead = f"{ev['summary']}\n\n" if ev else ""
-        return Reply(f"{lead}✅ Thanks, you approved the sign-in request on your registered authenticator "
-                     f"_(simulated)_, so I've gone ahead: **{label} is done** (reference `{res['correlation_id']}`). "
-                     f"{extra.capitalize()}.\n\nPlease sign in again now. Did it work?",
-                     quick_replies=VALIDATION_REPLIES)
+        # one clear sequence: what we checked, what was done, what to do next. (The article summary is written
+        # *before* approval, "once you've approved…", so it isn't repeated here.)
+        lead = "Thanks for trying that. " if attempt == 2 else ""
+        demo = " _(In this demo the approval is simulated.)_" if ver.get("simulated", True) else ""
+        nxt = _AFTER_ACTION.get(kb.kb_id, "Please try again now.")
+        return Reply(f"{lead}To keep your account safe, I sent a sign-in request to your registered authenticator "
+                     f"app, and it was approved ✅.{demo}\n\n**{label} is done.** {extra.capitalize()}"
+                     f"{'.' if extra else ''} Reference: `{res['correlation_id']}`.\n\n**Next:** {nxt}\n\n"
+                     "**Did that work?**", quick_replies=VALIDATION_REPLIES)
 
     # ================================================================ wrap up
     def _on_validation(self, message: str) -> Reply:
@@ -812,13 +909,26 @@ class ConversationService:
             t = self.tickets.escalate(t["ticket_id"], reason, handoff)
         # the handoff itself (with the employee's words) is on the ticket; the audit log keeps what, not the text
         self._t("Escalation", f"{t['queue']} · {reason}", {"handoff_fields": sorted(k for k, v in handoff.items() if v)})
-        eta = self.tickets.sla_status(t).get("response_eta")  # business hours, in the employee's words
-        sla_txt = f" Someone will get back to you **{eta}**." if eta else ""
         st["stage"] = "ESCALATED"
-        msg = (f"I've passed this to **{t['queue']}** (ticket **{t['ticket_id']}**, priority **{t['priority']}**)."
-               f"{sla_txt} They can see our whole conversation and everything we've tried, so you won't need to "
-               "explain it again.")
-        return Reply(f"{user_prefix}\n\n{msg}".strip())
+        return Reply(f"{user_prefix}\n\n{self._handoff_summary(t)}".strip())
+
+    def _handoff_summary(self, t: dict) -> str:
+        """What the employee needs after a hand-off: who has it, the reference, and an exact time."""
+        sla = self.tickets.sla_status(t)
+        eta = sla.get("response_eta")
+        lines = [f"I've passed this to the **{t['queue']}** team.", "",
+                 f"- **Ticket:** {t['ticket_id']}",
+                 f"- **Priority:** {t['priority']} ({PRIORITY_WORD.get(t['priority'], 'normal')})"]
+        if eta:
+            lines.append(f"- **First reply expected:** {eta}")
+        note = ""
+        if sla.get("clock") == "24x7":
+            note = "_This is handled around the clock, including evenings and weekends._"
+        elif eta and "today" not in eta:
+            note = f"_The team works {bh.working_hours_text()}, so that's their next working time._"
+        body = "\n".join(lines) + (f"\n\n{note}" if note else "")
+        return (f"{body}\n\nThey'll see this whole conversation and everything we've tried, so you won't need to "
+                "explain it again. Their reply will appear right here and under **My tickets**.")
 
     def _fallback(self, error: str, message: str) -> Reply:
         """Prompt_Model_Contracts 'Fallback': no fabricated result, deterministic safe route + supervisor alert."""
