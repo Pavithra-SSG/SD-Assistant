@@ -40,7 +40,7 @@ SOMETHING_ELSE = "Something else"
 _PER_ISSUE = ("answers", "asked_on", "current_field", "pending_fields", "security_report", "other_detail",
               "kb_id", "last_display", "last_instructions", "incident", "form", "pending_issue", "issue_context",
               "triage", "steps_tried", "tool_results", "attempt", "help_resends", "category_id", "rerouted",
-              "clarified")
+              "clarified", "catalog_done", "catalog_name")
 # "Something else": how much it stops their work → (impact, urgency) for the priority matrix
 WORK_IMPACT = {"I can't work at all": ("moderate", "high"),
                "Other people have it too": ("significant", "high"),
@@ -113,6 +113,27 @@ def _reply_extras(r: Reply) -> dict:
     return {"attempt": r.meta.get("attempt"), "message_id": r.message_id, "can_rate": bool(r.meta.get("rate"))}
 
 
+_CATALOG: dict = json.loads((Path(__file__).parent / "content" / "catalog.json").read_text(encoding="utf-8"))
+_KIND = {"business_apps": "business", "standard_software": "standard", "licensed_software": "licensed"}
+
+
+def _norm(s: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9+#]+", " ", (s or "").lower()).split())
+
+
+def catalog_kind(name: str) -> str | None:
+    """'business' (an online system people get access to), 'standard' (Company Portal for anyone), 'licensed'
+    (Company Portal once a licence is assigned), or None when it isn't in the approved catalogue. The longest
+    matching entry wins, so 'Tableau Server' is a business system and 'Tableau' licensed software."""
+    n, best = f" {_norm(name)} ", (0, None)
+    for key, kind in _KIND.items():
+        for item in _CATALOG.get(key, []):
+            i = _norm(item)
+            if i and f" {i} " in n and len(i) > best[0]:
+                best = (len(i), kind)
+    return best[1]
+
+
 def looks_like_it(tri) -> bool:
     """Jev's best match is one of the IT categories, not Other. Then "not an IT question" is never the answer:
     a weak match is confirmed with the employee instead (3 Oct: "I am unable to join in the meeting" was
@@ -156,7 +177,8 @@ _NOT_NEEDED_FOR = {"KB-009": ("business_justification", "preferred_version"),  #
                    "KB-011": ("business_justification", "preferred_version")}
 _PERSON_DOES = {"KB-002": "**reset your password**", "KB-003": "**unlock your account**",
                 "KB-016": "**move your sign-in approvals to your new phone**"}
-OLD_PHONE_YES, OLD_PHONE_NO ="Yes, I still have it", "No, it's gone or reset"
+OLD_PHONE_YES, OLD_PHONE_NO = "Yes, I still have it", "No, it's gone or reset"
+INSTALL_IT, ONLINE_SYSTEM = "Install it on my laptop", "Access to an online system"
 # Why we're moving to a second path, keyed by the article we started from
 _SECOND_PATH_LEAD = {
     "KB-003": "Your account is unlocked, so if it still won't let you in, the password itself is the likely "
@@ -284,6 +306,8 @@ class ConversationService:
                 reply = self._on_confirm_scope(message)
             elif stage == "CONFIRM_NEW":
                 reply = self._on_confirm_new(message)
+            elif stage == "CATALOG_CHOICE":
+                reply = self._on_catalog_choice(message)
             elif stage == "ENDED" and not (message == CHASE or _STATUS_WORDS.search(message)):
                 # a message after "thanks" (from a client that kept the closed chat): start completely afresh
                 self._t("Conversation", "message after the conversation was closed → fresh start")
@@ -571,10 +595,6 @@ class ConversationService:
             self._t("Confirm classification", f"{why} → asking user (CHAT-02)")
             return Reply("Thanks. So I can send this to the right team, which of these is closest?",
                          quick_replies=options + [SOMETHING_ELSE])
-        if not danger and not force_ticket:
-            ask = self._ask_if_separate(cat, message)
-            if ask:
-                return ask
         if not danger:
             dup = self._duplicate_prompt(cat)
             if dup:
@@ -588,6 +608,9 @@ class ConversationService:
         prev = self.store.get_ticket(st.get("ticket_id") or "")
         if not prev or prev["category_id"] == cat:  # same kind of problem: the duplicate guard adds it instead
             return None
+        flags = st.get("triage", {}).get("flags", {})
+        if self._risky(flags, "security_incident") or self._risky(flags, "physical_safety"):
+            return None  # never delay a security or safety report with a question
         st.update(stage="CONFIRM_NEW", new_problem={"cat": cat, "prev": prev["ticket_id"]})
         self._t("Conversation", f"different problem ({self.k.name(cat)}) in a chat with {prev['ticket_id']} → asking")
         return Reply(f"That sounds like a **different problem** ({self.k.name(cat)}) from **{prev['ticket_id']}** "
@@ -968,6 +991,10 @@ class ConversationService:
                               "get the same updates as everyone else.")
 
     def _plan_ticket(self, cat: str) -> Reply:
+        # every new ticket comes through here, so no route (e.g. "which team is closest?") skips this question
+        ask = self._ask_if_separate(cat, self._st.get("pending_issue", ""))
+        if ask:
+            return ask
         self._open_ticket(cat)
         return self._gates(cat) or self._ground_and_continue(cat)
 
@@ -1186,6 +1213,9 @@ class ConversationService:
             st["answers"][f["Field_Name"]] = value
             st["issue_context"] += f"\n{f['Help_Text']} {value}"
             self._t("Understand", f"collected {f['Field_Name']}")
+            if f["Field_Name"] == "application_name" and catalog_kind(value) != "business":
+                st["pending_fields"] = []  # "what level of access?" means nothing for software or an unknown name
+                self._t("Understand", f"{value!r} isn't a listed business system → skip the access-level question")
         return self._next_field_or_act()
 
     # ================================================================ solve
@@ -1197,8 +1227,12 @@ class ConversationService:
         if cat == "CAT-05" and a.get("device_change") == "Yes" and cur != "KB-016":
             new, why = "KB-016", "phone changed or reset → re-enrol the authenticator"
         elif st.get("asked_on") == st["ticket_id"] and cat not in ("CAT-01", "CAT-05", "CAT-09"):
-            # we asked questions: read the answers (sign-in and security questions are about identity, not the fix)
-            g = self.brain.ground(st["issue_context"], self.k.kb_for_categories([cat]), [])
+            # we asked questions: read the answers, in every category (sign-in and security questions are about
+            # identity, not the fix). 4 Oct: "I need an application" → Application Access → "ollama", "Editor":
+            # that's software to install (a non-standard one), not access to a business app like Jira.
+            cands = [x for x in self.k.kb.values()
+                     if x.category_id == cat or x.category_id not in ("CAT-01", "CAT-05", "CAT-09")]
+            g = self.brain.ground(st["issue_context"], cands, [])
             self._save_kb_scores(g.kb_scores)
             best, p = max(g.kb_scores.items(), key=lambda x: x[1], default=(cur, 0))
             if best == cur or p < config.KB_MIN_RELEVANCE or p < g.kb_scores.get(cur, 0) + 0.15:
@@ -1206,12 +1240,79 @@ class ConversationService:
             new, why = best, f"after the answers {best} fits better ({_pct(p)} vs {_pct(g.kb_scores.get(cur, 0))})"
         else:
             return
+        self._set_article(new, why)
+
+    def _set_article(self, new: str, why: str) -> None:
+        """Use article `new`; if it belongs to another team, move the ticket there."""
+        st = self._st
+        cat, cur = st["category_id"], st.get("kb_id")
         self._t("Retriever", f"{cur} → {new}: {why}")
         st["kb_id"] = new
-        self.store.update_ticket(st["ticket_id"], kb_id=new)
+        new_cat = self.k.kb[new].category_id
+        if new_cat != cat:
+            st["category_id"] = new_cat
+            self.store.update_ticket(st["ticket_id"], kb_id=new, category_id=new_cat, queue=self.k.queue(new_cat),
+                                     sub_agent=self.k.sub_agent(new_cat), ticket_type=self.k.ticket_type(new_cat))
+            self._t("Retriever", f"ticket moved {self.k.name(cat)} → {self.k.name(new_cat)}")
+        else:
+            self.store.update_ticket(st["ticket_id"], kb_id=new)
+
+    def _catalog_check(self) -> Reply | None:
+        """TOOL-07 / TOOL-08: check the named software or system against the approved catalogue. 4 Oct: 'ollama'
+        with 'Editor' got the Jira/Salesforce access steps; it isn't a business system, it's software to install."""
+        st = self._st
+        if st.get("catalog_done") == st["ticket_id"]:
+            return None
+        cat, a, kb = st["category_id"], st.get("answers", {}), st.get("kb_id")
+        name = a.get("application_name") if cat == "CAT-07" else a.get("software_name") if cat == "CAT-03" else None
+        if not name or (cat == "CAT-03" and kb not in ("KB-009", "KB-010", "KB-012")) or \
+                (cat == "CAT-07" and kb != "KB-020"):
+            return None
+        st["catalog_done"] = st["ticket_id"]
+        kind = catalog_kind(name)
+        self._t("Tool", f"{'TOOL-08 access list' if cat == 'CAT-07' else 'TOOL-07 catalogue'}: {name!r} → "
+                        f"{kind or 'not in the approved catalogue'}")
+        target = {"business": "KB-020", "standard": "KB-010", "licensed": "KB-009"}.get(kind or "")
+        if target:
+            if target != kb:
+                self._set_article(target, f"{name} is {kind} in the catalogue")
+            return None
+        st["catalog_name"] = name
+        if cat == "CAT-03":  # software nobody has approved yet: the security and licensing review
+            return self._not_catalogued_software(name)
+        st["stage"] = "CATALOG_CHOICE"  # an unknown name asked for as "access": find out what they mean
+        return Reply(f"I can't find **{name}** in our list of business systems. **What do you need?**",
+                     quick_replies=[INSTALL_IT, ONLINE_SYSTEM])
+
+    def _not_catalogued_software(self, name: str) -> Reply:
+        self._set_article("KB-012", f"{name} isn't in the approved software catalogue")
+        ev = self.kbs.live("KB-012") or {}
+        return self._escalate(f"{name} is not in the approved software catalogue → security and licensing review.",
+                              "\n\n".join(filter(None, [f"**{name}** isn't in our approved software catalogue yet, "
+                                                        "so it can't be installed from the Company Portal.",
+                                                        ev.get("summary"), ev.get("handoff_message")])))
+
+    def _on_catalog_choice(self, message: str) -> Reply:
+        st = self._st
+        st["stage"] = "IDLE"
+        name = st.get("catalog_name") or "it"
+        if message == INSTALL_IT or (message != ONLINE_SYSTEM and re.search(
+                r"(?i)\b(install|download|laptop|computer|desktop|run it|my machine)\b", message)):
+            return self._not_catalogued_software(name)
+        self._t("Tool", f"TOOL-08: {name!r} is an online system not on the standard access list → access team")
+        return self._escalate(f"{name} is not on the standard access list → Application Access to check owner and "
+                              "approval.",
+                              f"**{name}** isn't on our list of standard business systems, so there's no self-service "
+                              "request for it. The **Application Access** team will check what it is, who owns it "
+                              "and whether you can be given access, usually **within a working day**. If your "
+                              "manager has already agreed, mention it when they contact you.")
 
     def _act(self) -> Reply:
-        self._refine_article()
+        ask = self._catalog_check()
+        if ask:
+            return ask
+        if self._st.get("catalog_done") != self._st.get("ticket_id"):  # the catalogue's answer beats a re-read
+            self._refine_article()
         kb = self.k.kb[self._st["kb_id"]]
         if kb.is_handoff and not self._try_first(kb):
             return self._handoff_article(kb)

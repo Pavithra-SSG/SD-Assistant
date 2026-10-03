@@ -424,6 +424,38 @@ def test_thanks_closes_the_conversation_and_the_next_message_starts_fresh(h):
     assert "different problem" not in (r["reply"] or "") and r.get("ticket_id") != first
 
 
+def test_catalogue_tells_systems_from_software():
+    from servicedesk.orchestrator import catalog_kind
+    assert catalog_kind("Jira") == "business" and catalog_kind("Tableau Server") == "business"
+    assert catalog_kind("tableau") == "licensed" and catalog_kind("zoom") == "standard"
+    assert catalog_kind("ollama") is None
+
+
+def test_unknown_name_asked_as_access_is_checked_against_the_catalogue(h):
+    """Regression (4 Oct): 'I need a application' → Application Access → 'ollama', 'Editor' got the steps for
+    Jira/Salesforce access. It isn't a business system: ask, then send new software to the review."""
+    from dataclasses import replace
+    from servicedesk.orchestrator import INSTALL_IT
+    brain, real = h.api.conv.brain, h.api.conv.brain.triage
+    try:
+        brain.triage = lambda m, hist: replace(real(m, hist), intent="report_it_problem",
+                                               categories=[("CAT-07", .9), ("OTHER", .1)], category_confidence=.9)
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "I need access to an application")
+        r = _answer_until(h, emp, sid, r, lambda x: INSTALL_IT in x["quick_replies"] or x.get("attempt")
+                          or "passed this" in (x["reply"] or ""), ["Editor"])
+        if h.ticket(r["ticket_id"])["kb_id"] != "KB-020":
+            return  # the mock picked another article; the catalogue only checks access requests
+    finally:
+        brain.triage = real
+    assert "can't find" in r["reply"]  # (the mock answers the app question with the fallback text)
+    r = h.chat(emp, sid, INSTALL_IT)
+    t = h.ticket(r["ticket_id"])
+    assert "isn't in our approved software catalogue" in r["reply"] and t["kb_id"] == "KB-012"
+    assert t["category_id"] == "CAT-03"
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

@@ -1,0 +1,15 @@
+{
+  "_about": "The approved catalogue the bot checks names against (the dataset's TOOL-07 licence/catalogue and TOOL-08 access-list checks have no data of their own). business_apps: online systems people get ACCESS to (Application Access team, KB-020). standard_software: installs from the Company Portal for anyone (KB-010). licensed_software: in the Company Portal once a licence is assigned (KB-009). Anything not listed is treated as non-catalogued: new software goes to the security and licensing review (KB-012), an unknown system to the Application Access team. Replace these with your organisation's real lists; matching ignores case and spacing.",
+  "business_apps": ["Salesforce", "Jira", "Confluence", "ServiceNow", "SAP", "Workday", "SharePoint", "Power BI Service",
+                    "Tableau Server", "GitHub", "GitLab", "Bitbucket", "Zendesk", "HubSpot", "Concur", "Coupa", "DocuSign",
+                    "Box", "Smartsheet", "Asana", "Monday", "Miro", "Figma", "Oracle", "NetSuite", "Splunk", "Datadog"],
+  "standard_software": ["Zoom", "Microsoft Teams", "Teams", "Slack", "Webex", "Adobe Acrobat Reader", "Acrobat Reader",
+                        "Microsoft Office", "Office", "Word", "Excel", "PowerPoint", "Outlook", "OneDrive", "Google Chrome",
+                        "Chrome", "Mozilla Firefox", "Firefox", "Microsoft Edge", "7-Zip", "Notepad++",
+                        "Visual Studio Code", "VS Code", "Git", "Python", "Postman", "PuTTY", "WinSCP", "Power BI Desktop",
+                        "VLC", "Company Portal", "VPN"],
+  "licensed_software": ["Adobe Acrobat Pro", "Acrobat Pro", "Adobe Photoshop", "Photoshop", "Adobe Illustrator",
+                        "Illustrator", "Adobe Creative Cloud", "Visio", "Microsoft Visio", "Microsoft Project", "Project",
+                        "Tableau", "Tableau Desktop", "Snagit", "AutoCAD", "MATLAB", "SPSS", "JetBrains", "IntelliJ IDEA",
+                        "PyCharm", "Camtasia", "Visual Studio"]
+}
