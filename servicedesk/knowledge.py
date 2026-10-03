@@ -14,6 +14,8 @@ from functools import lru_cache
 from . import config
 from .config import DATA_DIR
 
+SERVICE_TARGETS_FILE = config.ROOT / "servicedesk" / "content" / "service_targets.json"
+
 
 def _load(name: str):
     with open(DATA_DIR / f"{name}.json", encoding="utf-8") as f:
@@ -33,7 +35,8 @@ OTHER_CATEGORY = "OTHER"
 SESSION_SUPPLIED_FIELDS = {"employee_id", "account_username", "asset_tag"}
 
 # If a KB article has no usable second attempt, fall back to another article's action.
-ATTEMPT_2_FALLBACK = {"KB-001": "KB-002"}
+# (Unlocked but still can't sign in: the password is the problem, so the second path is an assisted reset.)
+ATTEMPT_2_FALLBACK = {"KB-001": "KB-002", "KB-003": "KB-002"}
 
 # Categories where "several people affected" means a shared outage -> one incident, linked tickets.
 INCIDENT_CATEGORIES = ("CAT-02", "CAT-06", "CAT-08", "CAT-11")
@@ -117,6 +120,7 @@ class Knowledge:
         self.priority_matrix = {(r["Impact"].lower(), r["Urgency"].lower()): r["Computed_Priority"]
                                 for r in _load("priority_matrix")}
         self.sla = {(r["Category_ID"], r["Priority"]): r for r in _load("sla_policy")}
+        self._apply_service_targets()
         self.fields: dict[str, list[dict]] = {}
         for f in _load("dynamic_form_fields"):
             self.fields.setdefault(f["Category_ID"], []).append(f)
@@ -210,10 +214,29 @@ class Knowledge:
             return "Service Desk Duty Manager"
         return self.routing[cat_id]["Primary_Queue"]
 
+    def _apply_service_targets(self) -> None:
+        """content/service_targets.json: realistic reply/fix hours per category (the dataset's are the same for
+        every category). The dataset row keeps its other fields, such as the pause rule."""
+        if not SERVICE_TARGETS_FILE.exists():
+            return
+        targets = json.loads(SERVICE_TARGETS_FILE.read_text(encoding="utf-8"))
+        for cat, row in targets.items():
+            if cat.startswith("_"):
+                continue
+            key = OTHER_CATEGORY if cat == "other" else cat
+            for prio in ("P1", "P2", "P3", "P4"):
+                if prio in row:
+                    base = self.sla.get((key, prio)) or self.sla.get(("CAT-01", prio)) or {}
+                    ack, fix = row[prio]
+                    self.sla[(key, prio)] = {**base, "Category_ID": key, "Priority": prio,
+                                             "Acknowledgement_Hours": ack, "Resolution_Target_Hours": fix}
+
     def sla_target(self, cat_id: str, priority: str) -> dict | None:
+        if (cat_id, priority) in self.sla:
+            return self.sla[(cat_id, priority)]
         if cat_id == OTHER_CATEGORY:  # no row of its own: the dataset's targets are the same per priority
             return next((v for (_c, p), v in sorted(self.sla.items()) if p == priority), None)
-        return self.sla.get((cat_id, priority))
+        return None
 
     # ---------- retrieval ----------
     def kb_for_categories(self, cat_ids: list[str]) -> list[KBArticle]:

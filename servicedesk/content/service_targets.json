@@ -1,0 +1,16 @@
+{
+  "_about": "Realistic response and fix targets per category, in hours: [first reply, fix]. They replace the dataset's sla_policy numbers, which are the same for every category (P3 = 4 h reply, 24 h fix), so a password reset had the same 3-working-day fix target as a laptop repair. Hours are working hours (9-18 Mon-Fri) except where the clock is 24x7: P1, CAT-01, CAT-05, CAT-09 and a lost phone (KB-031). Edit here and restart the API; delete a row to fall back to the dataset. 'other' is used for tickets that matched no category.",
+  "CAT-01": {"name": "Password & Account Access", "P1": [0.25, 1], "P2": [0.25, 2], "P3": [0.5, 4],  "P4": [1, 8]},
+  "CAT-02": {"name": "VPN & Remote Access",        "P1": [0.25, 4], "P2": [0.5, 4],  "P3": [1, 8],    "P4": [4, 16]},
+  "CAT-03": {"name": "Software License & Installation", "P1": [0.5, 4], "P2": [1, 8], "P3": [4, 16], "P4": [8, 40]},
+  "CAT-04": {"name": "Hardware & Peripherals",     "P1": [0.5, 4],  "P2": [1, 8],    "P3": [4, 16],   "P4": [8, 40]},
+  "CAT-05": {"name": "MFA & Authentication",       "P1": [0.25, 1], "P2": [0.25, 2], "P3": [0.5, 4],  "P4": [1, 8]},
+  "CAT-06": {"name": "Email & Outlook",            "P1": [0.25, 4], "P2": [0.5, 4],  "P3": [1, 8],    "P4": [4, 16]},
+  "CAT-07": {"name": "Application Access & Permissions", "P1": [0.5, 4], "P2": [1, 8], "P3": [4, 16], "P4": [8, 24]},
+  "CAT-08": {"name": "Network & Connectivity",     "P1": [0.25, 4], "P2": [0.5, 4],  "P3": [1, 8],    "P4": [4, 16]},
+  "CAT-09": {"name": "Security Incidents",         "P1": [0.25, 4], "P2": [0.5, 8],  "P3": [1, 16],   "P4": [4, 24]},
+  "CAT-10": {"name": "Printer & Scanning",         "P1": [0.5, 4],  "P2": [1, 4],    "P3": [2, 8],    "P4": [4, 16]},
+  "CAT-11": {"name": "Collaboration Tools",        "P1": [0.25, 4], "P2": [0.5, 4],  "P3": [1, 8],    "P4": [4, 16]},
+  "CAT-12": {"name": "Mobile Device & MDM",        "P1": [0.25, 4], "P2": [0.5, 4],  "P3": [2, 8],    "P4": [4, 16]},
+  "other":  {"name": "Other / unclear",            "P1": [0.25, 4], "P2": [0.5, 8],  "P3": [2, 16],   "P4": [4, 24]}
+}

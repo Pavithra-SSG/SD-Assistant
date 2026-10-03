@@ -20,6 +20,15 @@ SAME_MIN, ADDS_MAX = 0.5, 0.5
 _CACHE_SECONDS = 30  # api and worker are separate processes: a short cache picks up approvals quickly
 
 
+# Versions written by a release, not a person: these may be replaced by a newer shipped draft
+SEED_AUTHORS = ("seed", "demo-seed", "release", "evaluate")
+
+
+def _same(row: dict | None, draft: dict) -> bool:
+    return bool(row) and all((row.get(k) or None) == (draft.get(k) or None)
+                             for k in ("title", "summary", "attempt1", "attempt2", "handoff_message"))
+
+
 class KBError(Exception):
     status_code = 422
 
@@ -41,22 +50,32 @@ class KnowledgeService:
 
     # ================================================================ versions
     def seed_drafts(self, approve: bool = False, by: str = "seed") -> int:
-        """Load the shipped drafts as version 1 for articles that have no version yet. Development can
-        auto-approve them so the demo shows the new wording; production leaves them for a supervisor."""
+        """Load the shipped drafts. An article with no version gets version 1. An article whose latest version
+        is still a shipped one (nobody has edited it) gets a new version when the shipped text has changed, so
+        an improved release reaches existing databases too; anything a person has written is never touched.
+        Development auto-approves (the demo shows the new wording); production leaves drafts for a supervisor."""
         drafts = {k: v for k, v in json.loads(DRAFTS_FILE.read_text(encoding="utf-8")).items() if k in self.k.kb}
-        have = {r["kb_id"] for r in self.store.query("SELECT DISTINCT kb_id FROM kb_versions")}
+        latest = {}
+        for r in self.store.query("SELECT * FROM kb_versions ORDER BY version"):
+            latest[r["kb_id"]] = r
         n = 0
         for kb_id, d in drafts.items():
-            if kb_id in have:
+            cur = latest.get(kb_id)
+            if cur and (cur["author"] not in SEED_AUTHORS or _same(self._row(cur), d)):
                 continue
+            version = (cur["version"] + 1) if cur else 1
             status = "approved" if approve else "draft"
-            self.store.execute(
-                "INSERT INTO kb_versions (kb_id,version,status,title,summary,why,attempt1_json,attempt2_json,"
-                "handoff_message,change_note,author,created_at,approved_by,approved_at) "
-                "VALUES (?,1,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (kb_id, status, d.get("title"), d.get("summary"), None, json.dumps(d.get("attempt1")),
-                 json.dumps(d.get("attempt2")), d.get("handoff_message"), "Initial employee-friendly draft",
-                 by, now(), by if approve else None, now() if approve else None))
+            with self.store.tx() as c:
+                if approve:
+                    c.execute("UPDATE kb_versions SET status='retired' WHERE kb_id=? AND status='approved'", (kb_id,))
+                c.execute(
+                    "INSERT INTO kb_versions (kb_id,version,status,title,summary,why,attempt1_json,attempt2_json,"
+                    "handoff_message,change_note,author,created_at,approved_by,approved_at) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (kb_id, version, status, d.get("title"), d.get("summary"), None, json.dumps(d.get("attempt1")),
+                     json.dumps(d.get("attempt2")), d.get("handoff_message"),
+                     "Initial employee-friendly draft" if not cur else "Updated shipped version",
+                     by, now(), by if approve else None, now() if approve else None))
             n += 1
         self._live_at = 0
         return n

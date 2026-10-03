@@ -54,7 +54,7 @@ Highlights:
 
 - **Screenshots are read on the server.** RapidOCR runs locally, so images never leave the company. Passwords and codes are blurred, error codes are picked out, and the bot quotes the actual error line.
 - **Answers sound human but are never invented.** Every reply comes from a supervisor-approved, employee-friendly article or a fixed template.
-- **Business-hours SLAs** (Asia/Kolkata, holidays included, P1 24×7), shown to employees as "by 5:00 pm tomorrow".
+- **Realistic targets per type of problem** (`servicedesk/content/service_targets.json`): a password reset gets a reply in 30 minutes and a fix within 4 hours; a hardware repair, 4 hours and 2 working days. Business hours in Asia/Kolkata with holidays; P1, sign-in, MFA, security and a lost phone run 24×7. Employees see exact times such as "by 5:00 pm tomorrow (Sun 4 Oct)".
 - **Feedback loop:** 👍/👎 on answers, 1–5 ratings on tickets, knowledge-gap tracking, and agents' category corrections.
 - **Privacy built in** (written with India's DPDP Act in mind): retention limits, "download my data", and a log of every time staff open a ticket.
 
@@ -268,7 +268,7 @@ servicedesk/
   orchestrator.py   the conversation: Jev calls, gates, KB attempts, escalation
   brain.py          every Jev question, plus an offline MockBrain
   knowledge.py      datasets, priority computation, form mapping
-  business_hours.py SLA clock: Asia/Kolkata, holidays, P1 24×7
+  business_hours.py SLA clock: Asia/Kolkata, holidays, 24×7 for P1 / sign-in / security
   store.py          SQLite or Postgres, migrations, append-only events
   services/         tickets · auth · alerts · notify · analytics · kb · attachments (OCR) · privacy
   tools.py          simulated IT tools (swap point for real AD/Intune/ITSM)
@@ -276,7 +276,7 @@ servicedesk/
 views/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
 ui/                 API client, shared styles, charts
 datasets/           28 JSON datasets (KB, routing, SLA, priority matrix, synthetic employees)
-tests/              87 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
+tests/              94 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
 deploy/  Dockerfile  docker-compose.yml  .github/workflows/  (ci.yml, cd.yml)
 docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · images
 ```
@@ -286,7 +286,7 @@ docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · 
 ## Tests and evaluation
 
 ```powershell
-python -m pytest tests -q                    # 87 checks, offline (mock brain), about 1 minute
+python -m pytest tests -q                    # 94 checks, offline (mock brain), about 1 minute
 $env:TEST_DATABASE_URL="postgresql://postgres:pw@localhost:5432/empty_db"; python -m pytest tests -q   # same on Postgres
 python evaluate.py --runs 2                  # live Jev: 43 chat cases, twice, model pinned
 python evaluate.py --mode form               # ticket-form cases

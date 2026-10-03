@@ -239,6 +239,131 @@ def test_a_confident_it_category_beats_not_it(h):
     assert r.get("ticket_id") or "which of these is closest" in r["reply"]
 
 
+def _answer_until(h, emp, sid, r, stop, answers, limit=6):
+    """Answer the bot's questions (with `answers` when the button is offered, else the first button) until
+    `stop(reply)` is true."""
+    for _ in range(limit):
+        if stop(r):
+            return r
+        qr = r["quick_replies"]
+        pick = next((a for a in answers if a in qr), qr[0] if qr else "yesterday")
+        r = h.chat(emp, sid, pick)
+    return r
+
+
+def test_no_working_authenticator_means_a_person_verifies_never_a_fake_approval(h):
+    """Regression (3 Oct): 'my account is locked' → MFA works? 'No' → 'I sent a sign-in request to your
+    authenticator app, and it was approved'."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "my account is locked")
+    r = _answer_until(h, emp, sid, r, lambda x: "passed this to" in (x["reply"] or "") or x.get("attempt"), ["No"])
+    assert "approved" not in r["reply"] and "can't confirm it's you here in the chat" in r["reply"]
+    t = h.ticket(r["ticket_id"])
+    assert t["verification"] == "V3 required" and t["queue"] == "Identity Security"
+
+
+def test_unlocked_but_still_locked_out_moves_to_a_password_reset(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "my account is locked")
+    r = _answer_until(h, emp, sid, r, lambda x: "Your account is unlocked" in (x["reply"] or ""), ["Yes"])
+    assert "Your account is unlocked." in r["reply"] and " ." not in r["reply"]  # no stray punctuation
+    r = h.chat(emp, sid, "No, still not working")
+    assert "the password itself is the likely problem" in r["reply"] and "I've reset your password." in r["reply"]
+
+
+def test_thank_you_after_a_fix_is_a_goodbye_not_a_greeting(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "thank you")
+    assert r["reply"].startswith("You're welcome!") and "I'm the IT Service Desk assistant" not in r["reply"]
+    r = h.chat(emp, sid, "thanks but it still doesn't work")  # not a goodbye: handled as a problem
+    assert not r["reply"].startswith("You're welcome")
+
+
+def test_targets_are_realistic_per_type_of_problem():
+    from servicedesk.knowledge import Knowledge
+    k = Knowledge()
+    pw, hw = k.sla_target("CAT-01", "P3"), k.sla_target("CAT-04", "P3")
+    assert (pw["Acknowledgement_Hours"], pw["Resolution_Target_Hours"]) == (0.5, 4)  # not 4 h / 24 h
+    assert (hw["Acknowledgement_Hours"], hw["Resolution_Target_Hours"]) == (4, 16)
+    assert pw["Pause_Rule"]  # the dataset's other fields are kept
+
+
+def test_an_improved_shipped_article_reaches_an_existing_database_but_never_replaces_a_persons_edit(h):
+    import json
+    from servicedesk.services import kb as kbmod
+    kbs, store = h.api.kbs, h.api.store
+    live = kbs.live("KB-029")
+    assert "Continue on this browser" in json.dumps(live["attempt1"])  # the rewritten article is live
+    real = kbmod.DRAFTS_FILE
+    try:
+        drafts = json.loads(real.read_text(encoding="utf-8"))
+        drafts["KB-029"]["summary"] = "Changed in a newer release."
+        drafts["KB-028"]["summary"] = "Changed in a newer release."
+        tmp = real.with_name("kb_test_drafts.json")
+        tmp.write_text(json.dumps(drafts), encoding="utf-8")
+        kbmod.DRAFTS_FILE = tmp
+        kbs.save_draft("KB-028", {**kbs.live("KB-028"), "summary": "A supervisor's own wording."}, author="EMP2001")
+        kbs.seed_drafts(approve=True, by="demo-seed")
+        kbs._live_at = 0
+        assert kbs.live("KB-029")["summary"] == "Changed in a newer release."
+        latest_028 = store.one("SELECT summary, author FROM kb_versions WHERE kb_id='KB-028' ORDER BY version DESC")
+        assert latest_028["author"] == "EMP2001"  # the person's draft is untouched, no newer shipped version on top
+    finally:
+        kbmod.DRAFTS_FILE = real
+        tmp.unlink(missing_ok=True)
+        kbs.seed_drafts(approve=True, by="demo-seed")  # put the shipped KB-029 text back for later tests
+
+
+def test_unsure_several_people_affected_is_asked_not_declared_an_outage(h):
+    """Regression (3 Oct): "people can't hear me on teams calls" scored several-people-affected 55% and was
+    opened as an outage with no explanation and no fix to try."""
+    from dataclasses import replace
+    from servicedesk.orchestrator import ONLY_ME, OTHERS_TOO
+    brain, real = h.api.conv.brain, h.api.conv.brain.triage
+
+    def unsure(m, hist):
+        t = real(m, hist)
+        return replace(t, categories=[("CAT-11", .95), ("OTHER", .05)], category_confidence=.95,
+                       flags={**t.flags, "multiple_users_affected": .55})
+    try:
+        brain.triage = unsure
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "people can't hear me on teams calls")
+        assert "other people too, or just you" in r["reply"] and r["quick_replies"] == [OTHERS_TOO, ONLY_ME]
+        r = h.chat(emp, sid, ONLY_ME)
+        t = h.ticket(r["ticket_id"])
+        assert "passed this to" not in r["reply"] and not t["is_incident"] and t["priority"] != "P2"
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        h.chat(emp, sid, "people can't hear me on teams calls")
+        r = h.chat(emp, sid, OTHERS_TOO)
+        assert "looks like a wider problem" in r["reply"] and h.ticket(r["ticket_id"])["is_incident"]
+    finally:
+        brain.triage = real
+
+
+def test_new_phone_asks_for_the_old_phone_before_any_approval(h):
+    """Regression (3 Oct): 'I got a new phone' → 'I confirmed it's you on your registered authenticator', which
+    is on the old phone. Ask first; without the old phone a person verifies them (V3)."""
+    from servicedesk.orchestrator import OLD_PHONE_NO, OLD_PHONE_YES
+    for answer, expect in ((OLD_PHONE_YES, "Your old sign-in approvals are cleared."),
+                           (OLD_PHONE_NO, "can't confirm it's you here in the chat")):
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "I have a new phone and need to set up my mfa authenticator on it")
+        r = _answer_until(h, emp, sid, r, lambda x: OLD_PHONE_YES in x["quick_replies"] or "passed this" in
+                          (x["reply"] or ""), ["Authenticator App", "Yes", "No"])
+        assert "Do you still have your old phone" in r["reply"]
+        r = h.chat(emp, sid, answer)
+        assert expect in r["reply"]
+        if answer == OLD_PHONE_NO:
+            assert "approved" not in r["reply"] and "move your sign-in approvals to your new phone" in r["reply"]
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

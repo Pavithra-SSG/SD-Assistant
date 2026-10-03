@@ -48,6 +48,9 @@ WORK_IMPACT = {"I can't work at all": ("moderate", "high"),
 OPEN_TICKET = "Open a ticket for this"
 SAME_ISSUE, NEW_ISSUE = "Yes, same issue", "No, it's something new"
 SAME_OUTAGE, JUST_ME = "Yes, same problem", "No, it's just me"
+OTHERS_TOO, ONLY_ME = "Yes, colleagues have it too", "Just me"
+# "people can't hear me" read as several people affected (55%): below this, ask instead of declaring an outage
+MULTI_USER_SURE = 0.8
 PERSON_PLEASE = "Connect me with a person"
 # answers (content/field_questions.json, CAT-09.actions_already_taken) that make a report urgent at once
 _SECURITY_HARM_ANSWERS = {"I clicked a link", "I entered my password", "I opened an attachment"}
@@ -62,6 +65,8 @@ _SECRET_PATTERN = re.compile(r"(?i)\b(password|passcode|pwd|otp|one[- ]time code
 HIDDEN = "[message hidden: it appeared to contain a password or code]"
 CHASE = "Ask the team to prioritise this"
 DONE_STATUSES = ("RESOLVED", "CLOSED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION")
+_THANKS = re.compile(r"(?i)\b(thanks?|thank\s*you|thx|ty|cheers|much appreciated|great,? (it )?works|that worked|"
+                     r"bye|goodbye|that'?s all|all good|perfect)\b")
 _FRUSTRATION = re.compile(r"(?i)\b(frustrat\w*|annoy\w*|angry|upset|fed up|ridiculous|unacceptable|useless|"
                           r"disappointed|still waiting|waiting (so|too|very) long|no one|nobody|hurry|asap|"
                           r"urgent(ly)?|how much longer|taking (so|too) long)\b")
@@ -124,9 +129,34 @@ PRIORITY_WORD = {"P1": "critical", "P2": "high", "P3": "medium", "P4": "low"}
 _FIELD_QUESTIONS: dict = json.loads((Path(__file__).parent / "content" / "field_questions.json")
                                     .read_text(encoding="utf-8"))
 # what the employee does after a verified tool action (the tool result says what was done, not what's next)
-_AFTER_ACTION = {"KB-002": "Open that link, choose a new password, then sign in again.",
-                 "KB-003": "Try signing in again now.",
-                 "KB-016": "Open the MFA setup portal and scan the new QR code with your authenticator app."}
+# What a verified action did, and what the employee does next: (done, next)
+_AFTER_ACTION = {
+    "KB-002": ("I've reset your password.",
+               "A one-time link is on its way to your registered personal email or mobile (it expires in 30 "
+               "minutes). Open it, choose a new password (at least 12 characters, not one you've used before), then "
+               "sign in to your laptop with it first so everything else picks it up. Your phone's mail app will "
+               "ask for the new password too."),
+    "KB-003": ("Your account is unlocked.",
+               "Sign in again now, typing your password carefully (check Caps Lock). If you're not sure of the "
+               "password, stop after one try: five wrong attempts lock it again. Tell me instead and I'll reset it."),
+    "KB-016": ("Your old sign-in approvals are cleared.",
+               "On your laptop, open your account's **Security info** page, choose **Add sign-in method → "
+               "Authenticator app**, and scan the QR code with the authenticator app on your new phone. Approve the "
+               "test notification to finish."),
+}
+# Category questions that don't apply to a particular fix: installing approved software from the portal or
+# fixing an expired licence needs no business justification ("your manager sees this when approving")
+_NOT_NEEDED_FOR = {"KB-010": ("business_justification", "preferred_version"),
+                   "KB-011": ("business_justification", "preferred_version")}
+_PERSON_DOES = {"KB-002": "**reset your password**", "KB-003": "**unlock your account**",
+                "KB-016": "**move your sign-in approvals to your new phone**"}
+OLD_PHONE_YES, OLD_PHONE_NO ="Yes, I still have it", "No, it's gone or reset"
+# Why we're moving to a second path, keyed by the article we started from
+_SECOND_PATH_LEAD = {
+    "KB-003": "Your account is unlocked, so if it still won't let you in, the password itself is the likely "
+              "problem (an old saved password, or a recent change that didn't sync). Let's reset it.",
+    "KB-001": "No problem. I can reset it for you instead.",
+}
 
 
 def _field_spec(f: dict) -> dict:
@@ -244,6 +274,13 @@ class ConversationService:
                 reply = self._on_other_impact(message)
             elif stage == "CONFIRM_INCIDENT":
                 reply = self._on_confirm_incident(message)
+            elif stage == "CONFIRM_SCOPE":
+                reply = self._on_confirm_scope(message)
+            elif stage == "CONFIRM_OLD_PHONE":
+                st["stage"] = "IDLE"
+                st.setdefault("answers", {})["old_phone"] = (OLD_PHONE_YES if message == OLD_PHONE_YES or re.match(
+                    r"(?i)\s*(yes|yeah|yep|i (still )?have)", message) else OLD_PHONE_NO)
+                reply = self._verified_action(self.k.kb[st["kb_id"]], attempt=max(1, st.get("attempt", 0) or 1))
             elif stage == "CONFIRM_DUPLICATE":
                 reply = self._on_confirm_duplicate(message)
             elif stage == "COLLECTING":
@@ -432,8 +469,24 @@ class ConversationService:
         return Reply(None)
 
     # ================================================================ triage
+    def _small_talk(self, message: str) -> Reply:
+        open_t = [t for t in self.store.tickets(employee_id=self._employee["Employee_ID"])
+                  if t["status"] not in DONE_STATUSES]
+        if _THANKS.search(message):  # "thank you" after a fix is a goodbye, not a fresh hello
+            tail = (f" **{open_t[0]['ticket_id']}** is still with the team, and their reply will appear under "
+                    "**My tickets**." if open_t else "")
+            return Reply(f"You're welcome! 😊 Glad I could help.{tail} If anything else comes up, just tell me here.")
+        extra = (f"\n\nYour ticket **{open_t[0]['ticket_id']}** is still open; ask me for an update any time."
+                 if open_t else "")
+        return Reply("Hi! 👋 I'm the IT Service Desk assistant. Tell me what's going wrong, in your own words, and "
+                     f"I'll help you fix it or get it to the right person. You can attach a screenshot too.{extra}")
+
     def _triage(self, message: str, force_ticket: bool = False, unclear_ok: bool = False) -> Reply:
         st = self._st
+        if not force_ticket and len(message.split()) <= 6 and _THANKS.search(message) \
+                and not re.search(r"(?i)\b(but|not|still|isn'?t|doesn'?t|won'?t|can'?t|error|issue|problem)\b", message):
+            self._t("Intent router", "thanks / goodbye (no model call)")
+            return self._small_talk(message)
         tri = self.brain.triage(message, self._history())
         top = ", ".join(f"{self.k.name(c)} {_pct(p)}" for c, p in tri.categories[:3])
         self._t("Intent router", f"{tri.intent} (confidence {_pct(tri.intent_confidence)})", tri.raw)
@@ -462,12 +515,7 @@ class ConversationService:
             intent = "report_it_problem"
 
         if intent == "small_talk":
-            open_t = [t for t in self.store.tickets(employee_id=self._employee["Employee_ID"])
-                      if t["status"] not in ("RESOLVED", "CLOSED", "CANCELLED")]
-            extra = f" Your ticket {open_t[0]['ticket_id']} is still open." if open_t else ""
-            return Reply("Hi! 👋 I'm the IT Service Desk assistant. Tell me what's going wrong, in your own words, "
-                         "and I'll help you fix it or get it to the right person. You can attach a screenshot too."
-                         f"{extra}")
+            return self._small_talk(message)
         if intent == "out_of_scope":  # never a dead end: if we've misread it, they can still get a ticket
             return Reply("That doesn't look like an IT problem to me, so I may not be the right place. For HR, "
                          "payroll or travel, the employee portal is the best place to go.\n\nIf it **is** "
@@ -560,6 +608,13 @@ class ConversationService:
         dup = self.tickets.open_duplicate(self._employee["Employee_ID"], cat)
         if not dup:
             return None
+        if dup["ticket_id"] == st.get("ticket_id"):  # more detail about this chat's own ticket: just add it
+            self._t("Duplicate guard", f"same category as this chat's {dup['ticket_id']} → added, no question")
+            st.update(dup_ticket=dup["ticket_id"], dup_category=cat)
+            reply = self._on_confirm_duplicate(SAME_ISSUE)
+            reply.text = (f"Thanks, I've added that to **{dup['ticket_id']}** so the team sees it. "
+                          f"It's currently **{employee_label(dup, self.tickets.user_name(dup['owner']))}**.")
+            return reply
         st.update(stage="CONFIRM_DUPLICATE", dup_ticket=dup["ticket_id"], dup_category=cat)
         self._t("Duplicate guard", f"open {self.k.name(cat)} ticket {dup['ticket_id']} in the last "
                                    f"{config.DUPLICATE_WINDOW_HOURS}h → asking user")
@@ -745,7 +800,8 @@ class ConversationService:
         if cat == "CAT-09" or (self._risky(flags, "security_incident") and cat != "CAT-12"):
             return self._security_path()
         if ticket["priority"] == "P1":
-            return self._escalate("Computed priority P1 (critical) — human alerted immediately.")
+            return self._escalate("Computed priority P1 (critical) — human alerted immediately.",
+                                  "This is stopping work in a big way, so I've marked it **critical** and alerted the on-call team now. You don't need to try any fixes yourself.")
         if cat in ("CAT-01", "CAT-05", "CAT-07") and self._risky(flags, "acting_for_someone_else"):
             return self._escalate("Request targets another person's account (SEC-06) — needs an authorised "
                                   "delegated workflow.",
@@ -760,11 +816,19 @@ class ConversationService:
                                   "verify you another way and get you back in.")
         if self._risky(flags, "privileged_or_irreversible"):
             self.store.update_ticket(st["ticket_id"], verification="V4 + approval")
+            if cat == "CAT-12":  # a wipe or similar device action
+                why = ("Wiping or resetting a device can't be undone, so it always needs Security's approval, for "
+                       "everyone. I've raised the approval request for you, and the device team will confirm it's you "
+                       "before anything happens.")
+            else:  # admin / privileged access: the approved KB-021 wording
+                ev = self.kbs.live("KB-021") or {}
+                why = "\n\n".join(filter(None, [ev.get("summary"), ev.get("handoff_message")])) or (
+                    "Admin access always needs approval, for everyone. I've raised the approval request for you.")
             return self._escalate("Privileged or irreversible action requested → V4 + approval (never auto-granted).",
-                                  "Admin access and actions that can't be undone (like wiping a device) always "
-                                  "need approval, for everyone. I've raised the approval request for you.")
+                                  why)
         if self.k.categories.get(cat, {}).get("Mandatory_Handoff") == "Yes":
-            return self._escalate("Category requires mandatory handoff.")
+            return self._escalate("Category requires mandatory handoff.",
+                                  "This is one the team always handles directly, so I'm passing it straight to them with the details you've given.")
         if cat in INCIDENT_CATEGORIES:
             multi = self._risky(flags, "multiple_users_affected")
             parent = self.tickets.open_incident(cat, ticket["location"])
@@ -777,11 +841,39 @@ class ConversationService:
                     return Reply(f"There's already a known **{self.k.name(cat)}** problem at {ticket['location']}: "
                                  f"_{parent['summary'][:90]}_ ({parent['ticket_id']}). Is yours the same?",
                                  quick_replies=[SAME_OUTAGE, JUST_ME])
+            if multi and ask_incident and flags.get("multiple_users_affected", 0) < MULTI_USER_SURE:
+                st["stage"] = "CONFIRM_SCOPE"
+                self._t("Incident", f"several people affected? {_pct(flags['multiple_users_affected'])} → asking")
+                return Reply("Quick check so I send this the right way: **is this happening to other people too, "
+                             "or just you?**", quick_replies=[OTHERS_TOO, ONLY_ME])
             if multi:
-                self.store.update_ticket(st["ticket_id"], is_incident=1)
-                return self._escalate("Multiple users/site affected → incident opened; matching tickets will link "
-                                      "to it (KB-022).")
+                return self._open_outage(cat)
         return None
+
+    def _open_outage(self, cat: str) -> Reply:
+        self.store.update_ticket(self._st["ticket_id"], is_incident=1)
+        return self._escalate("Multiple users/site affected → incident opened; matching tickets will link to it.",
+                              "Since several people are affected, this looks like a wider problem rather than "
+                              "something on your own device, so troubleshooting your laptop won't help. I've "
+                              f"reported it to the **{self.k.queue(cat)}** team as an outage; anyone else who "
+                              "reports it will be linked to the same ticket, and you'll all get the same updates.")
+
+    def _on_confirm_scope(self, message: str) -> Reply:
+        st = self._st
+        st["stage"] = "IDLE"
+        cat = st["category_id"]
+        if message == OTHERS_TOO:
+            self._t("Incident", "employee: colleagues affected too → outage")
+            return self._open_outage(cat)
+        if message != ONLY_ME:  # typed something instead: let the model judge it as part of the problem
+            st["issue_context"] = f"{st.get('issue_context', '')}\n{message}".strip()
+        # just them: drop the guess, and the priority it raised, then troubleshoot normally
+        st["triage"]["flags"]["multiple_users_affected"] = 0.0
+        tri = st["triage"]
+        prio, why = self.k.compute_priority(tri.get("impact"), tri.get("urgency"), tri["flags"], cat)
+        self.store.update_ticket(st["ticket_id"], priority=prio, priority_reason=why)
+        self._t("Incident", f"employee: just them → normal troubleshooting at {prio} ({why})")
+        return self._ground_and_continue(cat)
 
     def _on_confirm_incident(self, message: str) -> Reply:
         st = self._st
@@ -923,12 +1015,14 @@ class ConversationService:
         best_id, best_p = max(g.kb_scores.items(), key=lambda x: x[1], default=(None, 0))
         if best_p < config.KB_MIN_RELEVANCE:
             self._gap(cat, st["issue_context"], (best_id, best_p))
-            return self._escalate(f"No KB article judged relevant (best {_pct(best_p)}) — bot does not guess.")
+            return self._escalate(f"No KB article judged relevant (best {_pct(best_p)}) — bot does not guess.",
+                                  "I don't have a tested fix for this exact problem, and I'd rather not guess, so a specialist will take it from here with what you've told me.")
         kb = self.k.kb[best_id]
         st["kb_id"] = kb.kb_id
         self.store.update_ticket(st["ticket_id"], kb_id=kb.kb_id)
 
-        missing = [f for f in fields if g.field_provided.get(f["Field_Name"], 0) < config.FIELD_PROVIDED_THRESHOLD]
+        missing = [f for f in fields if g.field_provided.get(f["Field_Name"], 0) < config.FIELD_PROVIDED_THRESHOLD
+                   and f["Field_Name"] not in _NOT_NEEDED_FOR.get(kb.kb_id, ())]
         shown = getattr(self, "_screenshot_error", "")
         if shown:  # never ask for the error message the screenshot already shows
             for f in [f for f in missing if "error" in f["Field_Name"].lower()]:
@@ -999,7 +1093,29 @@ class ConversationService:
         return self._next_field_or_act()
 
     # ================================================================ solve
+    def _refine_article(self) -> None:
+        """The article was picked from the first message; the answers can change the picture ("stuck in the
+        Outbox" is a different fix from "emails missing", a new phone is re-enrolment, not a missing prompt)."""
+        st = self._st
+        cat, a, cur = st["category_id"], st.get("answers", {}), st.get("kb_id")
+        if cat == "CAT-05" and a.get("device_change") == "Yes" and cur != "KB-016":
+            new, why = "KB-016", "phone changed or reset → re-enrol the authenticator"
+        elif st.get("asked_on") == st["ticket_id"] and cat not in ("CAT-01", "CAT-05", "CAT-09"):
+            # we asked questions: read the answers (sign-in and security questions are about identity, not the fix)
+            g = self.brain.ground(st["issue_context"], self.k.kb_for_categories([cat]), [])
+            self._save_kb_scores(g.kb_scores)
+            best, p = max(g.kb_scores.items(), key=lambda x: x[1], default=(cur, 0))
+            if best == cur or p < config.KB_MIN_RELEVANCE or p < g.kb_scores.get(cur, 0) + 0.15:
+                return
+            new, why = best, f"after the answers {best} fits better ({_pct(p)} vs {_pct(g.kb_scores.get(cur, 0))})"
+        else:
+            return
+        self._t("Retriever", f"{cur} → {new}: {why}")
+        st["kb_id"] = new
+        self.store.update_ticket(st["ticket_id"], kb_id=new)
+
     def _act(self) -> Reply:
+        self._refine_article()
         kb = self.k.kb[self._st["kb_id"]]
         if kb.is_handoff:
             return self._handoff_article(kb)
@@ -1042,7 +1158,8 @@ class ConversationService:
             if fb and self.k.kb[fb].is_verified_tool_action:
                 self._t("Solve", f"{kb.kb_id} has no second path → playbook fallback {fb}")
                 return self._verified_action(self.k.kb[fb], attempt=2)
-            return self._escalate(f"{kb.kb_id} has no second supported attempt.")
+            return self._escalate(f"{kb.kb_id} has no second supported attempt.",
+                                  "Thanks for trying that. The next step needs someone from the team, so I'm passing it on with everything we've tried.")
         if not action:
             return self._handoff_article(kb)
 
@@ -1092,6 +1209,25 @@ class ConversationService:
             ev = self.kbs.live(kb.kb_id)  # a person does it; the employee still gets the approved "what now"
             tip = "\n\n".join(filter(None, [ev.get("summary"), ev.get("handoff_message")])) if ev else ""
             return self._escalate(f"{kb.kb_id} requires a tool action that isn't in the approved registry.", tip)
+        if kb.kb_id == "KB-016" and "old_phone" not in st.get("answers", {}):
+            # the approval goes to the authenticator they already have: on a new phone that's the OLD phone
+            st["stage"] = "CONFIRM_OLD_PHONE"
+            return Reply("To confirm it's you, I'll send a sign-in approval to the authenticator app you already "
+                         "have set up. **Do you still have your old phone with the authenticator app on it?**",
+                         quick_replies=[OLD_PHONE_YES, OLD_PHONE_NO])
+        if self._no_working_authenticator():
+            # V2 means "approve on your registered authenticator"; with none working it's V3 (identity_verification):
+            # a person verifies them. Never claim an approval on an app they've just said doesn't work.
+            self.store.update_ticket(st["ticket_id"], verification="V3 required", queue="Identity Security")
+            self._t("Identity", "no working authenticator → V3 supervised identity check")
+            return self._escalate(
+                f"{label} needs identity verification, but the employee has no working authenticator → V3.",
+                f"Thanks. Because your authenticator app isn't working, I can't confirm it's you here in the chat. "
+                f"That's on purpose: it stops anyone else getting into your account.\n\n**What happens next:** "
+                f"someone from Identity Security will call you on your registered work number, check a couple of "
+                f"details, then {_PERSON_DOES.get(kb.kb_id, 'finish this')} with you and help you set up your "
+                "authenticator again.\n\n"
+                "**Please have ready:** your work laptop, and your employee ID card if you're in the office.")
         if attempt == 1:
             self._to("VERIFICATION_PENDING", "Sensitive action requires step-up", verification="V2 step-up")
         else:
@@ -1100,7 +1236,8 @@ class ConversationService:
         st["tool_results"].append(ver)
         self._t("Tool", f"TOOL-03 identity verification → {ver['status']}", ver)
         if ver["status"] != "VERIFIED":
-            return self._escalate("Step-up verification failed or unavailable.")
+            return self._escalate("Step-up verification failed or unavailable.",
+                                  "I couldn't confirm it's you here in the chat, so someone from the team will verify you another way and finish this with you.")
         if attempt == 1:
             self._to("READY_FOR_RESOLUTION", "Verified and unexpired", verification="V2 VERIFIED")
             self._to("ATTEMPT_1", "Safe grounded action selected", attempts=1)
@@ -1108,22 +1245,27 @@ class ConversationService:
         st["tool_results"].append(res)
         self._t("Tool", f"{res['tool']} {label} → {res['status']}", res)
         if res["status"] != "SUCCESS":
-            return self._escalate(f"{res['tool']} failed: {res.get('reason')}")
-        extra = res.get("delivery") or res.get("next") or ""
+            return self._escalate(f"{res['tool']} failed: {res.get('reason')}",
+                                  "Something went wrong on our side while I was doing that, so a person will finish it for you. Nothing has changed on your account.")
         action = f"{label} via {res['tool']} (ref {res['correlation_id']})"
         st["steps_tried"].append({"attempt": attempt, "kb": kb.kb_id, "action": action})
-        st.update(attempt=attempt, stage="VALIDATING", last_instructions=f"{label} was completed. {extra}")
+        done, nxt = _AFTER_ACTION.get(kb.kb_id, (f"{label} is done.", "Please try again now."))
+        st.update(attempt=attempt, stage="VALIDATING", last_instructions=f"{done} {nxt}")
         self._to(f"WAITING_FOR_VALIDATION_{attempt}", "Action executed", verification="V2 VERIFIED")
         self._record_answer(kb, attempt, action, ticket_id=st["ticket_id"])
-        # one clear sequence: what we checked, what was done, what to do next. (The article summary is written
-        # *before* approval, "once you've approved…", so it isn't repeated here.)
-        lead = "Thanks for trying that. " if attempt == 2 else ""
-        demo = " _(In this demo the approval is simulated.)_" if ver.get("simulated", True) else ""
-        nxt = _AFTER_ACTION.get(kb.kb_id, "Please try again now.")
-        return Reply(f"{lead}To keep your account safe, I sent a sign-in request to your registered authenticator "
-                     f"app, and it was approved ✅.{demo}\n\n**{label} is done.** {extra.capitalize()}"
-                     f"{'.' if extra else ''} Reference: `{res['correlation_id']}`.\n\n**Next:** {nxt}\n\n"
-                     "**Did that work?**", quick_replies=VALIDATION_REPLIES)
+        # one clear sequence: why we're on a new step, how we checked it's them, what was done, what to do next
+        lead = _SECOND_PATH_LEAD.get(st.get("kb_id"), "Thanks for trying that.") if attempt == 2 else ""
+        demo = " _(simulated in this demo)_" if ver.get("simulated", True) else ""
+        return Reply(f"{lead}\n\nTo keep your account safe, I confirmed it's you with a sign-in approval on your "
+                     f"registered authenticator app{demo}.\n\n✅ **{done}** Reference: `{res['correlation_id']}`\n\n"
+                     f"**Next:** {nxt}\n\n**Did that work?**".strip(), quick_replies=VALIDATION_REPLIES)
+
+    def _no_working_authenticator(self) -> bool:
+        """They've told us their authenticator can't be used (not working, or a new phone and no backup codes)."""
+        a = self._st.get("answers", {})
+        return (a.get("mfa_still_working") == "No" or a.get("old_phone") == OLD_PHONE_NO
+                or (a.get("device_change") == "Yes" and a.get("backup_codes_available") == "No")
+                or self._risky(self._st.get("triage", {}).get("flags", {}), "all_factors_lost"))
 
     # ================================================================ wrap up
     def _on_validation(self, message: str) -> Reply:
@@ -1152,17 +1294,19 @@ class ConversationService:
         if outcome == "not_fixed":
             if st.get("attempt", 0) < config.MAX_ATTEMPTS:
                 return self._attempt(st["attempt"] + 1)
-            return self._escalate(f"{config.MAX_ATTEMPTS} supported attempts failed.")
+            return self._escalate(f"{config.MAX_ATTEMPTS} supported attempts failed.",
+                                  "Thanks for trying both fixes. Since neither worked, this needs a specialist to look at it directly.")
         if outcome == "needs_help":
             st["help_resends"] = st.get("help_resends", 0) + 1
             if st["help_resends"] > 1:
-                return self._escalate("User needed help following the steps twice.")
+                return self._escalate("User needed help following the steps twice.",
+                                  "No problem, this is easier with a person. I'm bringing someone in to go through it with you.")
             steps = st.get("last_display") or f"**{st.get('last_instructions', '')}**"
             return Reply(f"No problem, let's take it slowly. Here are the steps again:\n\n{steps}\n\nWhich step "
                          "are you stuck on? Tell me what you see on your screen (a screenshot helps), or I can "
                          "bring in a person.", quick_replies=VALIDATION_REPLIES)
         if outcome == "wants_human":
-            return self._escalate("User asked for a human.")
+            return self._escalate("User asked for a human.", "Of course. I'm getting a person from IT for you.")
         # new_issue: the current ticket stays waiting for validation; start fresh
         st["stage"] = "IDLE"
         self._new_issue()
