@@ -50,6 +50,9 @@ OPEN_TICKET = "Open a ticket for this"
 SAME_ISSUE, NEW_ISSUE = "Yes, same issue", "No, it's something new"
 SAME_OUTAGE, JUST_ME = "Yes, same problem", "No, it's just me"
 OTHERS_TOO, ONLY_ME = "Yes, colleagues have it too", "Just me"
+# A different problem in a chat that already has a ticket: one problem = one ticket = one conversation
+NEW_TICKET_YES = "Yes, open a separate ticket"
+PART_OF = "No, it's part of "  # + ticket id
 # "people can't hear me" read as several people affected (55%): below this, ask instead of declaring an outage
 MULTI_USER_SURE = 0.8
 PERSON_PLEASE = "Connect me with a person"
@@ -279,6 +282,16 @@ class ConversationService:
                 reply = self._on_confirm_incident(message)
             elif stage == "CONFIRM_SCOPE":
                 reply = self._on_confirm_scope(message)
+            elif stage == "CONFIRM_NEW":
+                reply = self._on_confirm_new(message)
+            elif stage == "ENDED" and not (message == CHASE or _STATUS_WORDS.search(message)):
+                # a message after "thanks" (from a client that kept the closed chat): start completely afresh
+                self._t("Conversation", "message after the conversation was closed → fresh start")
+                for k in ("ticket_id", "chased", "language_note"):
+                    st.pop(k, None)
+                st["stage"] = "IDLE"
+                self._new_issue()
+                reply = self._triage(message)
             elif stage == "CLARIFY":  # more detail: read the whole thing again, in every category
                 st["stage"] = "IDLE"
                 st["issue_context"] = f"{st.get('issue_context', '')}\n{message}".strip()
@@ -481,10 +494,15 @@ class ConversationService:
     def _small_talk(self, message: str) -> Reply:
         open_t = [t for t in self.store.tickets(employee_id=self._employee["Employee_ID"])
                   if t["status"] not in DONE_STATUSES]
-        if _THANKS.search(message):  # "thank you" after a fix is a goodbye, not a fresh hello
-            tail = (f" **{open_t[0]['ticket_id']}** is still with the team, and their reply will appear under "
-                    "**My tickets**." if open_t else "")
-            return Reply(f"You're welcome! 😊 Glad I could help.{tail} If anything else comes up, just tell me here.")
+        if _THANKS.search(message):  # "thank you" is a goodbye: close this conversation, the next message starts afresh
+            mine = self._st.get("ticket_id")
+            open_mine = next((t for t in open_t if t["ticket_id"] == mine), None)
+            tail = (f" **{open_mine['ticket_id']}** is still with the team, and their reply will appear under "
+                    "**My tickets**." if open_mine else "")
+            self._st["stage"] = "ENDED"
+            self._t("Conversation", "employee said thanks → conversation closed")
+            return Reply(f"You're welcome! 😊 Glad I could help.{tail}\n\nI've closed this conversation. If anything "
+                         "else comes up, just type it below and I'll start a fresh one.", meta={"ended": True})
         extra = (f"\n\nYour ticket **{open_t[0]['ticket_id']}** is still open; ask me for an update any time."
                  if open_t else "")
         return Reply("Hi! 👋 I'm the IT Service Desk assistant. Tell me what's going wrong, in your own words, and "
@@ -553,11 +571,51 @@ class ConversationService:
             self._t("Confirm classification", f"{why} → asking user (CHAT-02)")
             return Reply("Thanks. So I can send this to the right team, which of these is closest?",
                          quick_replies=options + [SOMETHING_ELSE])
+        if not danger and not force_ticket:
+            ask = self._ask_if_separate(cat, message)
+            if ask:
+                return ask
         if not danger:
             dup = self._duplicate_prompt(cat)
             if dup:
                 return dup
         return self._plan_ticket(cat)
+
+    def _ask_if_separate(self, cat: str, message: str) -> Reply | None:
+        """This chat already has a ticket and this is a different kind of problem: ask before opening another.
+        One problem = one ticket = one conversation, so the answer 'yes' carries the message to a new chat."""
+        st = self._st
+        prev = self.store.get_ticket(st.get("ticket_id") or "")
+        if not prev or prev["category_id"] == cat:  # same kind of problem: the duplicate guard adds it instead
+            return None
+        st.update(stage="CONFIRM_NEW", new_problem={"cat": cat, "prev": prev["ticket_id"]})
+        self._t("Conversation", f"different problem ({self.k.name(cat)}) in a chat with {prev['ticket_id']} → asking")
+        return Reply(f"That sounds like a **different problem** ({self.k.name(cat)}) from **{prev['ticket_id']}** "
+                     f"(_{prev['summary'][:80]}_).\n\n**Shall I open a separate ticket for it?** I'll start it in a "
+                     "new conversation, so each problem keeps its own history and updates.",
+                     quick_replies=[NEW_TICKET_YES, f"{PART_OF}{prev['ticket_id']}"], meta={"carry": message})
+
+    def _on_confirm_new(self, message: str) -> Reply:
+        st = self._st
+        q = st.pop("new_problem", {}) or {}
+        prev_t = self.store.get_ticket(q.get("prev") or "")
+        st["stage"] = ("ESCALATED" if prev_t and prev_t["status"] in ("ESCALATION_QUEUED", "HUMAN_ASSIGNED",
+                                                                       "HUMAN_IN_PROGRESS") else "IDLE")
+        if message == NEW_TICKET_YES:  # (the chat screen moves this to a new conversation; other clients land here)
+            self._t("Conversation", "employee: separate ticket")
+            st.pop("ticket_id", None)
+            st["stage"] = "IDLE"
+            return self._plan_ticket(q.get("cat") or st.get("category_id") or OTHER_CATEGORY)
+        if message.startswith(PART_OF) and q.get("prev"):
+            prev = self.tickets.get(q["prev"])
+            st["ticket_id"] = prev["ticket_id"]
+            if prev["owner"]:
+                self.notify.notify(prev["owner"], prev["ticket_id"], f"Employee added more detail to {prev['ticket_id']}.")
+            self._t("Conversation", f"employee: part of {prev['ticket_id']} → added, no new ticket")
+            when, _late = self._when(prev)
+            return Reply(f"Okay, no new ticket. I've added it to **{prev['ticket_id']}** so the **{prev['queue']}** "
+                         f"team sees it.{(' ' + when) if when else ''}", ticket_id=prev["ticket_id"])
+        return self._route(message)  # they typed something else: handle it as a normal message
 
     def _on_confirm_category(self, message: str) -> Reply:
         names = {self.k.name(c): c for c in self.k.categories}

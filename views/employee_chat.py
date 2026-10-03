@@ -50,18 +50,24 @@ if len(all_sids) > 1:
 sid = ss.chat_sid
 
 
-def send(text: str, files=None) -> None:
+def send(text: str, files=None, new_chat: bool = False) -> None:
+    """Send to this conversation, or to a fresh one when this one is closed ('thanks') or the employee chose a
+    separate ticket for a different problem: one problem, one ticket, one conversation."""
+    target = sid
+    last = ss.get("last_bot") or {}
+    if new_chat or last.get("ended"):
+        target = ss.chat_sid = fresh_chat()
     ids = []
     for f in files or []:
         with st.spinner(f"Reading your screenshot {f.name}…"):
             try:
-                ids.append(client.upload(f, session_id=sid)["id"])
+                ids.append(client.upload(f, session_id=target)["id"])
             except ApiError as e:
                 st.error(str(e.detail))
                 return
     with st.spinner("Checking…"):
         try:
-            client.post("/chat", {"session_id": sid, "message": text or "", "attachment_ids": ids})
+            client.post("/chat", {"session_id": target, "message": text or "", "attachment_ids": ids})
         except ApiError as e:
             st.error(str(e.detail))
             return
@@ -124,12 +130,18 @@ if ss.get("empty_chat"):
         for s in starters:
             if st.button(s, width="content"):
                 send(s)
+elif ss.get("last_bot") and ss.last_bot.get("ended"):
+    st.caption("✅ This conversation is closed. Type below to start a new one; it'll get its own ticket if needed.")
 elif ss.get("last_bot") and ss.last_bot.get("quick_replies"):
     qr = ss.last_bot["quick_replies"]
+    carry = ss.last_bot.get("new_problem")  # "open a separate ticket?": yes moves the problem to a new chat
     with st.container(horizontal=True, gap="small"):
         for i, q in enumerate(qr):
             if st.button(q, key=f"qr-{ss.last_bot['id']}-{i}", width="content"):
-                send(q)
+                if carry and i == 0:
+                    send(carry, new_chat=True)
+                else:
+                    send(q)
 
 entry = st.chat_input("Describe your issue, or attach a screenshot. Never share passwords or codes.",
                       accept_file="multiple", file_type=["png", "jpg", "jpeg", "webp"])

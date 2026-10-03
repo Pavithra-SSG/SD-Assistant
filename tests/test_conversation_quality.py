@@ -192,6 +192,9 @@ def test_a_new_problem_in_the_same_chat_starts_clean(h):
     finally:
         h.api.conv.brain.triage = real
     assert not any("phishing" in m["text"].lower() for m in seen[0])  # the old problem isn't read again
+    from servicedesk.orchestrator import NEW_TICKET_YES
+    assert "different problem" in r["reply"] and r["quick_replies"][0] == NEW_TICKET_YES
+    r = h.chat(emp, sid, NEW_TICKET_YES)  # (the chat screen moves it to a new conversation; the API also works here)
     state = json.loads(h.api.store.one("SELECT state_json FROM sessions WHERE session_id=?", (sid,))["state_json"])
     assert "actions_already_taken" not in state.get("answers", {}) and not state.get("security_report")
     assert r.get("ticket_id") != first
@@ -390,6 +393,35 @@ def test_more_detail_in_the_same_chat_is_saved_once(h):
         return  # judged a different problem
     texts = [m["text"] for m in h.api.store.messages(sid) if m["role"] == "user"]
     assert texts.count("I also got another email from the same sender") == 1
+
+
+def test_a_different_problem_asks_before_a_second_ticket(h):
+    """4 Oct: one chat, several problems (an install, then the VPN). Ask before opening another ticket;
+    'no' adds it to the first one and opens nothing."""
+    from servicedesk.orchestrator import NEW_TICKET_YES, PART_OF
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    first = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    r = h.chat(emp, sid, "also my VPN won't connect")
+    assert "different problem" in r["reply"] and r["quick_replies"] == [NEW_TICKET_YES, f"{PART_OF}{first}"]
+    msgs = h.c.get(f"/chat/sessions/{sid}/messages", headers=h.login(emp)).json()
+    assert msgs[-1]["new_problem"] == "also my VPN won't connect"  # what the chat screen carries to a new chat
+    r = h.chat(emp, sid, f"{PART_OF}{first}")
+    assert "no new ticket" in r["reply"] and len(h.api.store.tickets(employee_id=emp)) == 1
+
+
+def test_thanks_closes_the_conversation_and_the_next_message_starts_fresh(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    first = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    r = h.chat(emp, sid, "thank you")
+    assert "closed this conversation" in r["reply"]
+    msgs = h.c.get(f"/chat/sessions/{sid}/messages", headers=h.login(emp)).json()
+    assert msgs[-1]["ended"] is True
+    rows = {s["session_id"]: s for s in h.c.get("/chat/sessions", headers=h.login(emp)).json()}
+    assert rows[sid]["in_progress"] is False  # a closed chat isn't reopened at sign-in
+    r = h.chat(emp, sid, "my VPN won't connect")  # a client that kept the closed chat: a fresh start, no question
+    assert "different problem" not in (r["reply"] or "") and r.get("ticket_id") != first
 
 
 def test_overdue_ticket_says_overdue(h):

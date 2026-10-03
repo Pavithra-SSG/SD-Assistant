@@ -160,6 +160,10 @@ class MessageOut(Out):
     ticket_id: str | None
     agent: str | None = Field(None, description="Agent name on human replies")
     quick_replies: list[str] = []
+    ended: bool = Field(False, description="The employee said thanks and the conversation is closed: start a new "
+                                           "session for the next message")
+    new_problem: str | None = Field(None, description="On 'open a separate ticket?': the message to carry into a "
+                                                      "new session if they say yes")
 
 
 # ---------------------------------------------------------------- employee: form

@@ -454,7 +454,7 @@ def list_sessions(user: dict = Depends(employee_only)):
     rows = []
     for s in store.sessions_for(user["employee_id"]):
         state = json.loads(s.pop("state_json") or "{}")
-        rows.append({**s, "in_progress": state.get("stage", "IDLE") not in ("IDLE", "ESCALATED"),
+        rows.append({**s, "in_progress": state.get("stage", "IDLE") not in ("IDLE", "ESCALATED", "ENDED"),
                      "ticket_id": state.get("ticket_id")})
     return rows
 
@@ -478,7 +478,8 @@ def _employee_message(m: dict, ratings: dict | None = None) -> dict:
     return {"id": m["id"], "role": m["role"], "text": m["text"], "created_at": m["created_at"],
             "ticket_id": m["ticket_id"], "agent": meta.get("agent"), "quick_replies": meta.get("quick_replies", []),
             "attempt": meta.get("attempt"), "can_rate": bool(meta.get("rate")),
-            "rating": (ratings or {}).get(m["id"]), "attachment_ids": meta.get("attachment_ids", [])}
+            "rating": (ratings or {}).get(m["id"]), "attachment_ids": meta.get("attachment_ids", []),
+            "ended": bool(meta.get("ended")), "new_problem": meta.get("carry")}
 
 
 def _my_ratings(employee_id: str) -> dict[int, bool]:
