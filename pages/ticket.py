@@ -70,24 +70,30 @@ if ss.get("ticket_error"):
 can_take = not (t["owner"] and not mine) and (t["status"] in ("ESCALATION_QUEUED", "HUMAN_ASSIGNED") or (
     t["status"] not in ("HUMAN_IN_PROGRESS", "RESOLVED_PENDING_CONFIRMATION", "RESOLVED", "CLOSED", "CANCELLED")
     and not t["owner"]))
-lead = ["ack"] * bool(unacked) + (["take"] if can_take else ["owned"] if t["owner"] and not mine else [])
-cols = st.columns([7 - len(lead)] + [1.2] * len(lead) + [1, 1, 0.6])  # actions sit right, like the header
-note, slots = cols[0], dict(zip(lead + ["update", "resolve", "more"], cols[1:]))
-if "ack" in slots and slots["ack"].button("Acknowledge", width="stretch"):
-    for a in unacked:
-        client.post(f"/alerts/{a['alert_id']}/ack")
-    st.rerun()
-if "take" in slots and slots["take"].button("Take over", type="primary", width="stretch"):
-    act(f"/tickets/{tid}/takeover", ok=f"You own {tid}")
-if "owned" in slots:
-    slots["owned"].markdown(f"<span class='muted'>Owned by {t['owner_name']}</span>", unsafe_allow_html=True)
-update_clicked = slots["update"].button("Update", width="stretch", disabled=not can_edit)
-b = [None, None, None, slots["resolve"], slots["more"]]
+# Actions sit right, like the header. Each button is as wide as its label (never "Ackno…"); the row wraps on
+# narrow screens instead of shortening the words.
+bar = st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center")
+with bar:
+    if t["owner"] and not mine:
+        st.markdown(f"<span class='muted'>Owned by {t['owner_name']}</span>", unsafe_allow_html=True)
+    if unacked and st.button("Acknowledge alert", width="content",
+                             help="Stops the re-alerts for this ticket. Taking it over also acknowledges it."):
+        for a in unacked:
+            client.post(f"/alerts/{a['alert_id']}/ack")
+        st.rerun()
+    if can_take and st.button("Take over", type="primary", width="content",
+                              help="Make yourself the owner. The employee sees that you've joined the chat."):
+        act(f"/tickets/{tid}/takeover", ok=f"You own {tid}")
+    update_clicked = st.button("Save changes", width="content", disabled=not can_edit,
+                               help="Save edits to the fields below (category, impact, short description…).")
+b = [None, None, None, bar, bar]
 
 checklist = d["checklist"]
 req = [c for c in checklist if c["required"]]
 req_done = sum(bool(c["done_at"]) for c in req)
-with b[3].popover("Resolve", width="stretch", disabled=t["status"] != "HUMAN_IN_PROGRESS" or not can_work):
+with b[3].popover("Resolve ticket", width="content",
+                  disabled=t["status"] != "HUMAN_IN_PROGRESS" or not can_work,
+                  help=None if t["status"] == "HUMAN_IN_PROGRESS" else "Take the ticket over first."):
     code = st.selectbox("Resolution code", meta["agent_resolution_codes"], key=f"{key}-code")
     notes = st.text_area("Resolution notes", key=f"{key}-notes", placeholder="What fixed it, in a sentence or two")
     open_items = [c for c in req if not c["done_at"]]
@@ -104,7 +110,7 @@ with b[3].popover("Resolve", width="stretch", disabled=t["status"] != "HUMAN_IN_
                    ("" if notes.strip() else "resolution notes") + ".")
     if st.button("Resolve", type="primary", disabled=bool(missing), key=f"{key}-resolve"):
         act(f"/tickets/{tid}/resolve", {"resolution_code": code, "notes": notes}, ok=f"{tid} resolved")
-with b[4].popover("⋯", width="stretch"):
+with b[4].popover("Reassign or cancel", width="content"):
     st.markdown("**Reassign**")
     q = st.selectbox("Assignment group", meta["queues"], index=meta["queues"].index(t["queue"])
                      if t["queue"] in meta["queues"] else 0, key=f"{key}-rq")

@@ -30,11 +30,13 @@ with action.popover("Log a phone call", width="stretch"):
             else:
                 open_ticket(t["ticket_id"])
 
-f1, f2, f3, f4 = st.columns([2, 2, 2, 1])
+f1, f2 = st.columns(2)
 queues = f1.multiselect("Queue", user["queues"] if user["role"] == "agent" else meta["queues"])
 prios = f2.multiselect("Priority", ["P1", "P2", "P3", "P4"])
-who = f3.segmented_control("Show", ["All", "Mine", "Unowned", "Waiting on a human"], default="All")
-closed = f4.toggle("Include resolved")
+# second row, sized to the labels: "Waiting on a human" and "Include resolved tickets" are never cut short
+with st.container(horizontal=True, vertical_alignment="bottom", gap="large"):
+    who = st.segmented_control("Show", ["All", "Mine", "Unowned", "Waiting on a human"], default="All")
+    closed = st.toggle("Include resolved tickets")
 
 
 @st.fragment(run_every="15s")
