@@ -199,6 +199,40 @@ def test_a_new_problem_in_the_same_chat_starts_clean(h):
     assert rows[sid]["n_messages"] > 0 and "in_progress" in rows[sid]
 
 
+def test_a_lost_phone_is_handled_around_the_clock():
+    """Regression (3 Oct): a lost phone reported on Saturday said 'first reply by 10:00 am on Monday'."""
+    ist = bh._calendar()[0]
+    sat_7pm = datetime(2026, 10, 3, 19, 30, tzinfo=ist).astimezone(timezone.utc)
+    assert bh.add_hours(sat_7pm, 1, "P2", "CAT-12", "KB-031").astimezone(ist) == datetime(2026, 10, 3, 20, 30, tzinfo=ist)
+    assert bh.add_hours(sat_7pm, 1, "P2", "CAT-12", "KB-030").astimezone(ist).weekday() == 0  # a sync problem waits
+
+
+def test_a_confident_it_category_beats_not_it(h):
+    """Regression (3 Oct): "I am unable to join a meeting" got "I'm only set up for IT problems"."""
+    from servicedesk.brain import Triage
+    from servicedesk.orchestrator import OPEN_TICKET
+    emp = h.fresh_employee()
+    brain, real = h.api.conv.brain, h.api.conv.brain.triage
+
+    def says_not_it(msg, history, cats=None):
+        t = real(msg, history)
+        return Triage(intent="out_of_scope", intent_confidence=.88, categories=cats or t.categories,
+                      category_confidence=(cats or t.categories)[0][1], impact=t.impact, urgency=t.urgency,
+                      flags=t.flags, raw=t.raw)
+    try:
+        brain.triage = lambda m, hist: says_not_it(m, hist, [("CAT-11", .95), ("OTHER", .05)])
+        r = h.chat(emp, h.new_session(emp), "i am unable to join a meeting")
+        assert "doesn't look like an IT problem" not in r["reply"] and r.get("ticket_id")
+        brain.triage = lambda m, hist: says_not_it(m, hist, [("OTHER", .9), ("CAT-11", .1)])
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "what's the canteen menu today")
+        assert "doesn't look like an IT problem" in r["reply"] and r["quick_replies"] == [OPEN_TICKET]
+    finally:
+        brain.triage = real
+    r = h.chat(emp, sid, OPEN_TICKET)  # the way out still works if we've misread it
+    assert r.get("ticket_id") or "which of these is closest" in r["reply"]
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

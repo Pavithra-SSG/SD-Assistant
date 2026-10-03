@@ -521,12 +521,12 @@ class TicketService:
         created = parse_ts(t["created_at"])
         if not sla or not created:
             return {}
-        prio, cat = t["priority"], t.get("category_id")  # security incidents run 24x7 like P1
+        prio, cat, kb = t["priority"], t.get("category_id"), t.get("kb_id")  # security, sign-in, lost phone: 24x7
         nowdt = datetime.now(timezone.utc)
         paused = self.paused_hours(t, nowdt)
         ack_h, res_h = sla["Acknowledgement_Hours"], sla["Resolution_Target_Hours"]
-        resp_due = bh.add_hours(created, ack_h, prio, cat)
-        res_due = bh.add_hours(created, res_h + paused, prio, cat)
+        resp_due = bh.add_hours(created, ack_h, prio, cat, kb)
+        res_due = bh.add_hours(created, res_h + paused, prio, cat, kb)
         responded = parse_ts(t.get("claimed_at")) or (created if t["status"] in DONE_STATES
                                                       and not t.get("owner") else None)
         resolved = parse_ts(t.get("resolved_at"))
@@ -535,7 +535,7 @@ class TicketService:
             end = done or nowdt
             if end > due:
                 return "breached"
-            frac = max(0.0, bh.hours_between(created, end, prio, cat) - minus) / target if target else 1
+            frac = max(0.0, bh.hours_between(created, end, prio, cat, kb) - minus) / target if target else 1
             return "met" if done else ("at_risk" if frac >= config.SLA_RISK_FRACTION else "ok")
 
         return {"response_due": resp_due.isoformat(timespec="seconds"),
@@ -543,7 +543,7 @@ class TicketService:
                 "response_state": state(resp_due, responded, ack_h),
                 "resolve_state": state(res_due, resolved, res_h, paused),
                 "ack_hours": ack_h, "resolve_hours": res_h, "paused_hours": round(paused, 2),
-                "clock": "24x7" if bh.is_24x7(prio, cat) else "business hours",
+                "clock": "24x7" if bh.is_24x7(prio, cat, kb) else "business hours",
                 "response_eta": bh.friendly(resp_due, nowdt), "resolve_eta": bh.friendly(res_due, nowdt)}
 
     def paused_hours(self, t: dict, until: datetime) -> float:
@@ -555,10 +555,10 @@ class TicketService:
             to = str(json.loads(r["payload_json"] or "{}").get("detail", "")).partition("→")[2].split("·")[0].strip()
             at = parse_ts(r["created_at"])
             if since is not None:
-                total += bh.hours_between(since, at, t["priority"], t.get("category_id"))
+                total += bh.hours_between(since, at, t["priority"], t.get("category_id"), t.get("kb_id"))
                 since = None
             if to in config.SLA_PAUSE_STATUSES:
                 since = at
         if since is not None:
-            total += bh.hours_between(since, until, t["priority"], t.get("category_id"))
+            total += bh.hours_between(since, until, t["priority"], t.get("category_id"), t.get("kb_id"))
         return total

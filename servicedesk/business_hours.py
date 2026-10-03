@@ -38,8 +38,10 @@ def _calendar() -> tuple[ZoneInfo, time, time, frozenset[int], frozenset[date]]:
     return tz, start, end, frozenset(days), frozenset(holidays)
 
 
-def is_24x7(priority: str | None, category_id: str | None = None) -> bool:
-    return (priority or "") in config.SLA_24X7_PRIORITIES or (category_id or "") in config.SLA_24X7_CATEGORIES
+def is_24x7(priority: str | None, category_id: str | None = None, kb_id: str | None = None) -> bool:
+    """P1, the round-the-clock categories (security, sign-in, MFA) and urgent articles such as a lost phone."""
+    return ((priority or "") in config.SLA_24X7_PRIORITIES or (category_id or "") in config.SLA_24X7_CATEGORIES
+            or (kb_id or "") in config.SLA_24X7_ARTICLES)
 
 
 def _working_day(d: date) -> bool:
@@ -47,9 +49,10 @@ def _working_day(d: date) -> bool:
     return d.weekday() in days and d not in holidays
 
 
-def add_hours(start: datetime, hours: float, priority: str | None, category_id: str | None = None) -> datetime:
+def add_hours(start: datetime, hours: float, priority: str | None, category_id: str | None = None,
+              kb_id: str | None = None) -> datetime:
     """Due time = start + `hours` of the right kind of time for this priority and category."""
-    if is_24x7(priority, category_id):
+    if is_24x7(priority, category_id, kb_id):
         return start + timedelta(hours=hours)
     tz, open_t, close_t, _d, _h = _calendar()
     remaining = timedelta(hours=hours)
@@ -66,11 +69,12 @@ def add_hours(start: datetime, hours: float, priority: str | None, category_id: 
     return (start + timedelta(hours=hours)).astimezone(timezone.utc)
 
 
-def hours_between(a: datetime, b: datetime, priority: str | None, category_id: str | None = None) -> float:
+def hours_between(a: datetime, b: datetime, priority: str | None, category_id: str | None = None,
+                  kb_id: str | None = None) -> float:
     """Counted hours from a to b (working hours unless the ticket runs 24x7)."""
     if b <= a:
         return 0.0
-    if is_24x7(priority, category_id):
+    if is_24x7(priority, category_id, kb_id):
         return (b - a).total_seconds() / 3600
     tz, open_t, close_t, _d, _h = _calendar()
     total, cur, end = 0.0, a.astimezone(tz), b.astimezone(tz)

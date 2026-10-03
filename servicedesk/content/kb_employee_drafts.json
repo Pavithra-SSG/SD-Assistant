@@ -271,7 +271,7 @@
   },
   "KB-031": {
     "title": "Lost or stolen phone",
-    "summary": "I'm sorry your phone is lost. Wiping it remotely protects company data, but it needs Security's approval.",
-    "handoff_message": "I've raised an urgent request with Security. They'll confirm it's you and contact you about the next steps."
+    "summary": "I'm sorry your phone is lost. The quickest way to protect your work data is to lock or wipe it remotely. The device team does that once they've confirmed it's you, with Security's approval.",
+    "handoff_message": "**While you wait:**\n- If you can, use **Find My** (iPhone) or **Find My Device** (Android) from another device to see where it is or make it ring.\n- Please don't erase it yourself; the team will remove company data properly.\n- If it was stolen, report it to the police and keep the reference number."
   }
 }

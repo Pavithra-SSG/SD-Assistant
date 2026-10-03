@@ -104,6 +104,11 @@ def _reply_extras(r: Reply) -> dict:
     return {"attempt": r.meta.get("attempt"), "message_id": r.message_id, "can_rate": bool(r.meta.get("rate"))}
 
 
+def cat_confident(tri) -> bool:
+    """Jev is sure the message is about one of the IT categories (not Other)."""
+    return tri.category != OTHER_CATEGORY and tri.category_confidence >= config.OUT_OF_SCOPE_OVERRULE
+
+
 def _pct(p: float) -> str:
     return f"{p:.0%}"
 
@@ -448,6 +453,12 @@ class ConversationService:
             return Reply("Could you describe the problem again, without the password or code? "
                          "For example: \"my password isn't accepted on the VPN\".")
         intent = "report_it_problem" if (force_ticket or danger) else tri.intent
+        if intent == "out_of_scope" and cat_confident(tri):
+            # "I can't join a meeting" was called not-IT while Collaboration Tools scored 95%: a confident IT
+            # category wins over the out-of-scope guess
+            self._t("Intent router", f"out_of_scope overruled: {self.k.name(tri.category)} "
+                                     f"{_pct(tri.category_confidence)} is an IT category")
+            intent = "report_it_problem"
 
         if intent == "small_talk":
             open_t = [t for t in self.store.tickets(employee_id=self._employee["Employee_ID"])
@@ -456,9 +467,11 @@ class ConversationService:
             return Reply("Hi! 👋 I'm the IT Service Desk assistant. Tell me what's going wrong, in your own words, "
                          "and I'll help you fix it or get it to the right person. You can attach a screenshot too."
                          f"{extra}")
-        if intent == "out_of_scope":
-            return Reply("I'm only set up for IT problems, so I can't help with that one. For HR, payroll or "
-                         "travel, the employee portal is the best place to go.")
+        if intent == "out_of_scope":  # never a dead end: if we've misread it, they can still get a ticket
+            return Reply("That doesn't look like an IT problem to me, so I may not be the right place. For HR, "
+                         "payroll or travel, the employee portal is the best place to go.\n\nIf it **is** "
+                         "something IT should look at, tell me a bit more, or open a ticket and someone will check it.",
+                         quick_replies=[OPEN_TICKET])
         if intent == "ticket_status":  # in a chat that has a ticket, they mean that one
             return self._after_handoff(message) if st.get("ticket_id") else self._ticket_status()
         if intent == "how_to_question":
@@ -1075,7 +1088,9 @@ class ConversationService:
         st = self._st
         label, fn = tools.VERIFIED_ACTIONS.get(kb.kb_id, (None, None))
         if not fn:  # KB text mentions a tool the registry does not allow -> never execute (SEC-09)
-            return self._escalate(f"{kb.kb_id} requires a tool action that isn't in the approved registry.")
+            ev = self.kbs.live(kb.kb_id)  # a person does it; the employee still gets the approved "what now"
+            tip = "\n\n".join(filter(None, [ev.get("summary"), ev.get("handoff_message")])) if ev else ""
+            return self._escalate(f"{kb.kb_id} requires a tool action that isn't in the approved registry.", tip)
         if attempt == 1:
             self._to("VERIFICATION_PENDING", "Sensitive action requires step-up", verification="V2 step-up")
         else:

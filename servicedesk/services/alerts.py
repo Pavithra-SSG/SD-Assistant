@@ -158,7 +158,7 @@ class AlertService:
             created = parse_ts(t["created_at"])
             if not sla or not created:
                 continue
-            frac = bh.hours_between(created, nowdt, t["priority"], t.get("category_id")) / sla["Resolution_Target_Hours"]
+            frac = bh.hours_between(created, nowdt, t["priority"], t.get("category_id"), t.get("kb_id")) / sla["Resolution_Target_Hours"]
             if frac >= config.SLA_RISK_FRACTION:
                 self.on_escalation({**t, "incident_parent": None}, event="sla_risk")
 

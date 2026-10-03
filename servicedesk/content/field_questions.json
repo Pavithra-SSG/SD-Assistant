@@ -68,6 +68,6 @@
   "CAT-11.tool_name": {"ask": "Which app is it?"},
   "CAT-11.issue_type": {"ask": "What's the main problem?"},
 
-  "CAT-12.device_os": {"ask": "Is your phone an iPhone or Android?"},
+  "CAT-12.device_os": {"ask": "Is your phone an iPhone or Android?", "options": ["iPhone", "Android", "Other"]},
   "CAT-12.issue_type": {"ask": "What do you need help with?"}
 }
