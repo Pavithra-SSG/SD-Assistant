@@ -36,6 +36,11 @@ FIXED, NOT_FIXED, HELP, HUMAN = ("Yes, it's fixed", "No, still not working",
                                  "I need help with a step", "Talk to a human")
 VALIDATION_REPLIES = [FIXED, NOT_FIXED, HELP, HUMAN]
 SOMETHING_ELSE = "Something else"
+# "Something else": how much it stops their work → (impact, urgency) for the priority matrix
+WORK_IMPACT = {"I can't work at all": ("moderate", "high"),
+               "Other people have it too": ("significant", "high"),
+               "I can work, but it's slowing me down": ("limited", "medium"),
+               "It's a minor annoyance": ("limited", "low")}
 OPEN_TICKET = "Open a ticket for this"
 SAME_ISSUE, NEW_ISSUE = "Yes, same issue", "No, it's something new"
 SAME_OUTAGE, JUST_ME = "Yes, same problem", "No, it's just me"
@@ -222,6 +227,10 @@ class ConversationService:
                 reply = self._on_confirm_screenshot(message)
             elif stage == "CONFIRM_CATEGORY":
                 reply = self._on_confirm_category(message)
+            elif stage == "DESCRIBE_OTHER":
+                reply = self._on_describe_other(message)
+            elif stage == "OTHER_IMPACT":
+                reply = self._on_other_impact(message)
             elif stage == "CONFIRM_INCIDENT":
                 reply = self._on_confirm_incident(message)
             elif stage == "CONFIRM_DUPLICATE":
@@ -398,7 +407,7 @@ class ConversationService:
         return Reply(None)
 
     # ================================================================ triage
-    def _triage(self, message: str, force_ticket: bool = False) -> Reply:
+    def _triage(self, message: str, force_ticket: bool = False, unclear_ok: bool = False) -> Reply:
         st = self._st
         tri = self.brain.triage(message, self._history())
         top = ", ".join(f"{self.k.name(c)} {_pct(p)}" for c, p in tri.categories[:3])
@@ -445,6 +454,9 @@ class ConversationService:
         elif self._risky(tri.flags, "physical_safety"):
             cat = "CAT-04"
         elif cat == OTHER_CATEGORY or tri.category_confidence < config.CATEGORY_MIN_CONFIDENCE:
+            if unclear_ok:  # they've already said none of the teams fit: don't offer the same list again
+                self._t("Confirm classification", "still unclear after more detail → asking how it affects work")
+                return self._ask_other_impact()
             options = [self.k.name(c) for c, _ in tri.categories if c != OTHER_CATEGORY][:3]
             st["stage"] = "CONFIRM_CATEGORY"
             why = ("top category is Other / unclear" if cat == OTHER_CATEGORY else
@@ -465,13 +477,48 @@ class ConversationService:
             self._st["stage"] = "IDLE"
             return self._duplicate_prompt(names[message]) or self._plan_ticket(names[message])
         if message == SOMETHING_ELSE:
-            self._t("Confirm classification", "user chose Other / unclear → human")
-            self._st["stage"] = "IDLE"
-            self._open_ticket(OTHER_CATEGORY)
-            return self._escalate("Category Other / unclear — goes straight to a human (design doc §5).")
+            # never hand a person a one-line "os crash": ask what happens first, then how much it stops work
+            self._t("Confirm classification", "user chose Something else → asking for details")
+            self._st["stage"] = "DESCRIBE_OTHER"
+            return Reply("No problem. Tell me a bit more so I can either fix it or get it to the right person:\n\n"
+                         "- **What happens?** For example: _\"blue screen, then it restarts\"_ or _\"the screen "
+                         "freezes and I have to hold the power button\"_\n"
+                         "- **When does it happen?** At start-up, when you open a particular app, or at random?\n"
+                         "- **Any error message?** Type it, or attach a screenshot.")
         # free text: re-triage with the extra detail
         self._st["stage"] = "IDLE"
-        return self._triage(f"{self._st.get('pending_issue', '')}\n{message}".strip())
+        return self._triage(f"{self._st.get('pending_issue', '')}\n{message}".strip(), unclear_ok=True)
+
+    def _on_describe_other(self, message: str) -> Reply:
+        """Their fuller description: if it now matches a team, carry on there; if not, ask about impact."""
+        st = self._st
+        st["stage"] = "IDLE"
+        st["other_detail"] = message
+        # both messages together become the ticket summary, so the team sees the full picture
+        return self._triage(f"{st.get('pending_issue', '')}\n{message}".strip(), unclear_ok=True)
+
+    def _ask_other_impact(self) -> Reply:
+        self._st["stage"] = "OTHER_IMPACT"
+        return Reply("Thanks, that helps. **How much is this affecting your work right now?**",
+                     quick_replies=list(WORK_IMPACT))
+
+    def _on_other_impact(self, message: str) -> Reply:
+        st = self._st
+        if message not in WORK_IMPACT:  # typed instead of pressing a button: treat it as more detail
+            st["other_detail"] = f"{st.get('other_detail', '')}\n{message}".strip()
+            st["pending_issue"] = f"{st.get('pending_issue', '')}\n{message}".strip()
+            return Reply("Got it, I've added that. **How much is this affecting your work right now?**",
+                         quick_replies=list(WORK_IMPACT))
+        st["stage"] = "IDLE"
+        impact, urgency = WORK_IMPACT[message]
+        st.setdefault("triage", {}).update(impact=impact, urgency=urgency)
+        detail = st.get("other_detail", "")
+        st["answers"] = {k: v for k, v in (("what_happens", detail), ("effect_on_work", message)) if v}
+        self._open_ticket(OTHER_CATEGORY)
+        self._t("Confirm classification", f"no team matched; effect on work: {message} → human")
+        return self._escalate("No standard category matched after asking for details; goes to a person.",
+                              "Thanks. This doesn't match one of the fixes I can run myself, so I'm getting a "
+                              "person to look at it, with everything you've told me.")
 
     # ---------------------------------------------------------------- duplicate guard (spec §5.4, §9)
     def _duplicate_prompt(self, cat: str) -> Reply | None:

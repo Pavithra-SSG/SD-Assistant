@@ -145,6 +145,26 @@ def test_frustrated_follow_up_is_about_this_ticket_with_empathy_and_a_way_to_cha
     assert "already asked the team lead" in r["reply"] and not r["quick_replies"]
 
 
+def test_something_else_asks_for_details_before_a_person(h):
+    """Regression (3 Oct): "os crash" → Something else went straight to the Duty Manager with one line and no time."""
+    from servicedesk.orchestrator import SOMETHING_ELSE, WORK_IMPACT
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "something odd keeps happening")
+    assert SOMETHING_ELSE in r["quick_replies"]
+    r = h.chat(emp, sid, SOMETHING_ELSE)
+    assert "What happens?" in r["reply"] and not r.get("ticket_id")
+    assert h.api.store.tickets(employee_id=emp) == []  # nothing opened yet
+    r = h.chat(emp, sid, "odd stuff, then it goes away")
+    assert "How much is this affecting your work" in r["reply"] and r["quick_replies"] == list(WORK_IMPACT)
+    r = h.chat(emp, sid, "I can't work at all")
+    assert "passed this to the **Service Desk Duty Manager**" in r["reply"] and "First reply expected" in r["reply"]
+    t = h.api.store.tickets(employee_id=emp)[0]
+    assert t["priority"] == "P2" and "odd stuff" in t["summary"]
+    details = __import__("json").loads(t["handoff_json"])["details_collected"]
+    assert details == {"what_happens": "odd stuff, then it goes away", "effect_on_work": "I can't work at all"}
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

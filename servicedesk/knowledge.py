@@ -211,6 +211,8 @@ class Knowledge:
         return self.routing[cat_id]["Primary_Queue"]
 
     def sla_target(self, cat_id: str, priority: str) -> dict | None:
+        if cat_id == OTHER_CATEGORY:  # no row of its own: the dataset's targets are the same per priority
+            return next((v for (_c, p), v in sorted(self.sla.items()) if p == priority), None)
         return self.sla.get((cat_id, priority))
 
     # ---------- retrieval ----------
