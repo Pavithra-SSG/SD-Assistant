@@ -84,3 +84,38 @@ def test_status_answers_when_with_a_date(h):
     r = h.chat(emp, h.new_session(emp), "what is the status of my ticket")  # a new chat: the list view
     assert "Here's where your tickets stand" in r["reply"] and "First reply expected" in r["reply"]
     assert any(m in r["reply"] for m in (" Oct", " Nov", " Dec", " Jan"))
+
+
+def test_phishing_report_asks_before_handing_off(h):
+    """Regression (3 Oct): "I think I got a phishing email" went straight to Security with nothing to check."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "I think I got a phishing email")
+    tid = r["ticket_id"]
+    assert "Until Security looks at it" in r["reply"] and "passed this to" not in r["reply"]
+    assert h.ticket(tid)["status"] != "ESCALATION_QUEUED"
+    if "What kind of security concern" in r["reply"]:  # skipped when the message already says "phishing"
+        r = h.chat(emp, sid, "Phishing Email")
+    assert "Have you done anything with it so far?" in r["reply"] and "I clicked a link" in r["quick_replies"]
+    r = h.chat(emp, sid, "Nothing yet")
+    assert "attach a screenshot" in r["reply"] and r["quick_replies"] == ["Skip"]
+    r = h.chat(emp, sid, "Skip")
+    assert "that gives Security what they need" in r["reply"] and "passed this to the **Security Operations**" in r["reply"]
+    t = h.ticket(tid)
+    assert t["status"] == "ESCALATION_QUEUED" and t["priority"] == "P2"
+    handoff = __import__("json").loads(t["handoff_json"])
+    assert handoff["details_collected"]["actions_already_taken"] == "Nothing yet"
+
+
+def test_phishing_report_turns_urgent_when_they_clicked(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "I think I got a phishing email")
+    tid = r["ticket_id"]
+    if "What kind of security concern" in r["reply"]:
+        h.chat(emp, sid, "Phishing Email")
+    r = h.chat(emp, sid, "I entered my password")
+    t = h.ticket(tid)
+    assert t["priority"] == "P1" and t["status"] == "ESCALATION_QUEUED"
+    assert "don't use that password anywhere else" in r["reply"]
+    assert len(h.api.store.tickets(employee_id=emp)) == 1  # the same ticket, upgraded

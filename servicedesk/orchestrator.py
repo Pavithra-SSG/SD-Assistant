@@ -40,7 +40,9 @@ OPEN_TICKET = "Open a ticket for this"
 SAME_ISSUE, NEW_ISSUE = "Yes, same issue", "No, it's something new"
 SAME_OUTAGE, JUST_ME = "Yes, same problem", "No, it's just me"
 PERSON_PLEASE = "Connect me with a person"
-WRONG_SHOT, SEPARATE_PROBLEM, CARRY_ON = ("Wrong screenshot, I'll send another", "It's a separate problem",
+# answers (content/field_questions.json, CAT-09.actions_already_taken) that make a report urgent at once
+_SECURITY_HARM_ANSWERS = {"I clicked a link", "I entered my password", "I opened an attachment"}
+WRONG_SHOT, SEPARATE_PROBLEM, CARRY_ON =("Wrong screenshot, I'll send another", "It's a separate problem",
                                           "Carry on with my current issue")
 # Scripts we can't read yet (Tamil, Devanagari, Telugu, Kannada, Malayalam, Bengali, Gujarati, Gurmukhi, Odia)
 _NON_ENGLISH_SCRIPT = re.compile(r"[\u0900-\u0D7F]")
@@ -177,8 +179,10 @@ class ConversationService:
         typed, context = message, ""
         if atts and st.get("stage") == "CONFIRM_SCREENSHOT":  # a new screenshot replaces the doubtful one
             st["stage"] = st.pop("shot_pending", {}).get("prev_stage", "IDLE")
+        # (not for security reports: a phishing email's screenshot can look like any other topic, and it's evidence)
         if atts and self._screenshot_error and st.get("ticket_id") and st.get("stage") in (
-                "COLLECTING", "VALIDATING", "ESCALATED"):
+                "COLLECTING", "VALIDATING", "ESCALATED") and not st.get("security_report") \
+                and st.get("category_id") != "CAT-09":
             try:
                 other = self._screenshot_other_problem()
             except BrainError:
@@ -665,14 +669,50 @@ class ConversationService:
         self._open_ticket(cat)
         return self._gates(cat) or self._ground_and_continue(cat)
 
+    def _security_urgent(self) -> bool:
+        """Something already happened (link clicked, password typed, malware ran): no questions, P1 now."""
+        flags = self._st["triage"]["flags"]
+        return (self._risky(flags, "security_incident") or self._risky(flags, "active_harm")
+                or self.tickets.get(self._st["ticket_id"])["priority"] == "P1")
+
     def _security_path(self) -> Reply:
+        """A report of something suspicious (nothing clicked yet) gets a few quick questions so Security has
+        something to investigate; anything already acted on goes to Security immediately."""
+        st = self._st
+        urgent = self._security_urgent()
+        fields = [] if urgent else self._security_questions()
         cands = self.k.kb_for_categories(["CAT-09"])
-        g = self.brain.ground(self._st["issue_context"], cands, [])
+        g = self.brain.ground(st["issue_context"], cands, fields)
         self._t("Retriever", self._kb_trace(g.kb_scores), g.raw)
         self._save_kb_scores(g.kb_scores)
         kb_id = max(g.kb_scores, key=lambda k: g.kb_scores[k]) if g.kb_scores else "KB-024"
-        self._st["kb_id"] = kb_id
-        self.store.update_ticket(self._st["ticket_id"], kb_id=kb_id)
+        st["kb_id"] = kb_id
+        self.store.update_ticket(st["ticket_id"], kb_id=kb_id)
+        missing = [f for f in fields if g.field_provided.get(f["Field_Name"], 0) < config.FIELD_PROVIDED_THRESHOLD]
+        if urgent or not missing:
+            return self._security_handoff(kb_id, asked=False)
+        self._t("Security", f"report, nothing acted on yet → asking {[f['Field_Name'] for f in missing]} first")
+        st["security_report"] = True
+        st["pending_fields"] = missing[:3]
+        st["asked_on"] = st["ticket_id"]  # our own intro below replaces the generic one
+        reply = self._next_field_or_act()
+        reply.text = ("Thank you for reporting this. Flagging it quickly is the right call.\n\n"
+                      "🛡️ **Until Security looks at it:** don't click any links or open attachments in that message, "
+                      "and don't reply to it.\n\nA few quick questions so Security can check it properly.\n\n"
+                      f"{(reply.text or '').removeprefix('Thanks. ')}")
+        return reply
+
+    def _security_questions(self) -> list[dict]:
+        fields = list(self.k.fields_to_ask("CAT-09"))
+        shot = next((f for f in self.k.fields.get("CAT-09", []) if f["Field_Name"] == "email_headers_or_screenshot"),
+                    None)
+        if shot and not getattr(self, "_attachments", []):  # evidence helps; they can skip it
+            fields.append(shot)
+        return fields
+
+    def _security_handoff(self, kb_id: str, asked: bool, urgent_answer: str = "") -> Reply:
+        st = self._st
+        st.pop("security_report", None)
         steps = {
             "KB-024": ["Don't click any links or open attachments in that message.",
                        "Don't reply to it or forward it to colleagues.",
@@ -683,11 +723,36 @@ class ConversationService:
                        "Security will reset your password and MFA after verifying it's you."],
         }.get(kb_id, ["Don't take any further action on the suspicious item.",
                       "Keep it as it is, so Security can look at it."])
-        self._record_answer(self.k.kb[kb_id], 0, " ".join(steps), ticket_id=self._st["ticket_id"],
-                            outcome="escalated")
+        if asked:  # they've just answered our questions: the "tell me if you clicked" step is done
+            steps = [s for s in steps if not s.startswith("If you've already clicked")] + [
+                "Don't delete the message yet: Security may need to look at it."]
+        extra, what = {
+            "I clicked a link": ("Close the page that opened, and don't type anything into it.", "you clicked the link"),
+            "I opened an attachment": ("Disconnect from Wi-Fi (or unplug the network cable) but leave the computer on, "
+                                       "so Security can check it.", "you opened the attachment"),
+            "I entered my password": ("", "you entered your password"),
+        }.get(urgent_answer, ("", "of what happened"))
+        if extra:
+            steps = [extra] + steps
+        self._record_answer(self.k.kb[kb_id], 0, " ".join(steps), ticket_id=st["ticket_id"], outcome="escalated")
+        lead = (f"Thanks for telling me. Because {what}, I've marked this **urgent** and sent it to Security right "
+                "away." if urgent_answer else
+                "Thank you, that gives Security what they need." if asked
+                else "Thank you for reporting this. Flagging it quickly is the right call.")
         return self._escalate(f"Security incident — no resolution attempt, SOC handoff ({kb_id}).",
-                              "Thank you for reporting this. Flagging it quickly is the right call.\n\n"
-                              "🛡️ **Until Security gets back to you:**\n" + "\n".join(f"- {s}" for s in steps))
+                              f"{lead}\n\n🛡️ **Until Security gets back to you:**\n"
+                              + "\n".join(f"- {s}" for s in steps))
+
+    def _security_escalate_now(self, why: str) -> Reply:
+        """Mid-report they tell us they clicked / typed their password: P1 and Security straight away."""
+        st = self._st
+        st["triage"]["flags"]["active_harm"] = max(st["triage"]["flags"].get("active_harm", 0), 0.95)
+        self.store.update_ticket(st["ticket_id"], priority="P1", priority_reason=f"security/safety override: {why}")
+        self._t("Security", f"upgraded to P1: {why}")
+        st["pending_fields"] = []
+        st.pop("current_field", None)
+        return self._security_handoff("KB-025" if "password" in why.lower() else st.get("kb_id") or "KB-024",
+                                      asked=True, urgent_answer=why or "urgent")
 
     def _gap(self, category_id: str, question: str, best: tuple) -> None:
         """Knowledge gap: a real question no article answered. Reviewed weekly on the Knowledge page."""
@@ -754,6 +819,8 @@ class ConversationService:
     def _next_field_or_act(self) -> Reply:
         st = self._st
         status = self.tickets.get(st["ticket_id"])["status"]
+        if not st.get("pending_fields") and st.get("security_report"):
+            return self._security_handoff(st.get("kb_id") or "KB-024", asked=True)
         if st.get("pending_fields"):
             f = st["pending_fields"].pop(0)
             st["current_field"] = f
@@ -775,6 +842,8 @@ class ConversationService:
         st = self._st
         flags = self.brain.guard(message)
         self._apply_guard(flags)
+        if st.get("security_report") and (message in _SECURITY_HARM_ANSWERS or self._risky(flags, "security_incident")):
+            return self._security_escalate_now(message)  # same ticket, now urgent: never a second ticket
         if self._risky(flags, "security_incident") or self._risky(flags, "physical_safety"):
             st["stage"] = "IDLE"
             return self._triage(message)
