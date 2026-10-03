@@ -6,9 +6,11 @@ Then:                streamlit run app.py
 import streamlit as st
 
 from servicedesk import config
-from ui import client
+from ui import client, win_quiet
 from ui.client import ApiError
 from ui.common import alert_center, inject_css, notifications, sidebar_badges
+
+win_quiet.install()  # a closed browser tab no longer prints a WinError 10054 traceback on Windows
 
 st.set_page_config(page_title="IT Service Desk", page_icon="🛠️", layout="wide")
 inject_css()
