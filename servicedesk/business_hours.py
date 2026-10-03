@@ -106,7 +106,9 @@ def friendly(due: datetime, now: datetime | None = None) -> str:
     clock = local.strftime("%I:%M %p").lstrip("0").lower()
     days = (local.date() - today).days
     short = f"{local.strftime('%a')} {local.day} {local.strftime('%b')}"
-    if days <= 0:
+    if days < 0:  # in the past: never "today" (callers say "overdue")
+        return f"by {clock} on {local.strftime('%A')}, {local.day} {local.strftime('%b')}"
+    if days == 0:
         return f"by {clock} today ({short})"
     if days == 1:
         return f"by {clock} tomorrow ({short})"

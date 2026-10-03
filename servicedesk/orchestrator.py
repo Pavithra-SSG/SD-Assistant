@@ -51,6 +51,13 @@ _NON_USER_PRESTEP = re.compile(r"TOOL-|^Collect|^Ask |^Retrieve|^Confirm scope|^
 _SECRET_PATTERN = re.compile(r"(?i)\b(password|passcode|pwd|otp|one[- ]time code|code|pin|api[_ -]?key|token)"
                              r"(\s*(is|was|=|:)\s*)(\S{4,})")
 HIDDEN = "[message hidden: it appeared to contain a password or code]"
+CHASE = "Ask the team to prioritise this"
+DONE_STATUSES = ("RESOLVED", "CLOSED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION")
+_FRUSTRATION = re.compile(r"(?i)\b(frustrat\w*|annoy\w*|angry|upset|fed up|ridiculous|unacceptable|useless|"
+                          r"disappointed|still waiting|waiting (so|too|very) long|no one|nobody|hurry|asap|"
+                          r"urgent(ly)?|how much longer|taking (so|too) long)\b")
+# "status update", "any update?", "progress?" (but not "Windows update failed": that's a new problem)
+_STATUS_WORDS = re.compile(r"(?i)(\bstatus\b|\bany updates?\b|\bupdate on\b|^\s*updates?\W*$|\bprogress\b|\bany news\b)")
 _TIMING_QUESTION = re.compile(r"(?i)\b(when|which (day|date|monday|tuesday|wednesday|thursday|friday|saturday|"
                               r"sunday)|what (time|day|date)|exact (date|time|day)|eta|how long)\b")
 
@@ -223,9 +230,13 @@ class ConversationService:
                 reply = self._on_field_answer(message)
             elif stage == "VALIDATING":
                 reply = self._on_validation(message)
-            elif stage == "ESCALATED" and st.get("ticket_id") and (message in VALIDATION_REPLIES
-                                                                  or _TIMING_QUESTION.search(message)):
-                reply = self._after_handoff()  # old buttons or "when / which Monday?" are about this ticket
+            elif message == CHASE and st.get("ticket_id"):
+                reply = self._chase()
+            elif stage == "ESCALATED" and st.get("ticket_id") and (
+                    message in VALIDATION_REPLIES or _TIMING_QUESTION.search(message)
+                    or _STATUS_WORDS.search(message) or _FRUSTRATION.search(message)):
+                # old buttons, "when / which Monday?", "status update", "I'm frustrated": about this ticket
+                reply = self._after_handoff(message)
             elif message == OPEN_TICKET and st.get("pending_issue"):
                 reply = self._triage(st["pending_issue"], force_ticket=True)
             elif message == PERSON_PLEASE and st.get("language_note"):
@@ -421,8 +432,8 @@ class ConversationService:
         if intent == "out_of_scope":
             return Reply("I'm only set up for IT problems, so I can't help with that one. For HR, payroll or "
                          "travel, the employee portal is the best place to go.")
-        if intent == "ticket_status":
-            return self._ticket_status()
+        if intent == "ticket_status":  # in a chat that has a ticket, they mean that one
+            return self._after_handoff(message) if st.get("ticket_id") else self._ticket_status()
         if intent == "how_to_question":
             return self._answer_how_to(message, tri)
 
@@ -534,20 +545,74 @@ class ConversationService:
         return Reply(f"{text}\n\nIf this is happening to you right now, I can open a ticket and walk you "
                      "through it step by step.", quick_replies=[OPEN_TICKET, "Thanks!"], meta=self._rate(aid))
 
-    def _after_handoff(self) -> Reply:
-        """The ticket from this chat is with a team: say exactly where it is and when to expect them."""
-        t = self.tickets.get(self._st["ticket_id"])
-        sla = self.tickets.sla_status(t) if t["status"] not in ("RESOLVED", "CLOSED", "CANCELLED") else {}
+    def _when(self, t: dict) -> tuple[str, bool]:
+        """(sentence about timing, overdue?) for an open ticket. Past times are called overdue, never "today"."""
+        if t["status"] in DONE_STATUSES:
+            return "", False
+        sla = self.tickets.sla_status(t)
+        if t["status"] == "ESCALATION_QUEUED" and sla.get("response_eta"):
+            if sla.get("response_state") == "breached":
+                return (f"⚠️ Their first reply is **overdue**: it was due "
+                        f"{sla['response_eta'].removeprefix('by ')}."), True
+            return f"First reply expected **{sla['response_eta']}**.", False
+        if t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS") and sla.get("resolve_eta"):
+            if sla.get("resolve_state") == "breached":
+                return f"⚠️ The fix is **overdue**: the target was {sla['resolve_eta'].removeprefix('by ')}.", True
+            return f"Target to fix: **{sla['resolve_eta']}**.", False
+        return "", False
+
+    def _after_handoff(self, message: str = "") -> Reply:
+        """The ticket from this chat is with a team: where it is, when to expect them, and (when they're upset or
+        it's late) a way to ask for it to be prioritised."""
+        st = self._st
+        t = self.tickets.get(st["ticket_id"])
+        upset = bool(_FRUSTRATION.search(message or ""))
+        when, overdue = self._when(t)
         tz = datetime.now(timezone.utc).astimezone(bh._calendar()[0]).strftime("%Z")
-        if t["status"] == "ESCALATION_QUEUED":
-            head = f"**{t['ticket_id']}** is with the **{t['queue']}** team."
-            when = f"You can expect their first reply **{sla['response_eta']}** ({tz})." if sla.get("response_eta") else ""
-        else:
-            head = f"**{t['ticket_id']}**: {employee_label(t, self.tickets.user_name(t['owner']))}."
-            when = (f"They're aiming to have it fixed **{sla['resolve_eta']}** ({tz})."
-                    if t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS") and sla.get("resolve_eta") else "")
-        return Reply(" ".join(filter(None, [head, when])) + "\n\nIf anything has changed, such as a new error "
-                     "message, just describe it here or attach a screenshot.")
+        state = (f"is with the **{t['queue']}** team" if t["status"] == "ESCALATION_QUEUED"
+                 else f"– {employee_label(t, self.tickets.user_name(t['owner']))}")
+        parts = []
+        if upset:
+            parts.append("I'm sorry this is taking longer than you'd like. I understand it's frustrating, "
+                         "especially when it's stopping you from working.")
+        parts.append(f"**{t['ticket_id']}** {state}.")
+        if when:
+            parts.append(f"{when} _(Times are {tz}.)_")
+        buttons = []
+        if t["status"] not in DONE_STATUSES and (upset or overdue):
+            if st.get("chased") == t["ticket_id"]:
+                parts.append("I've already asked the team lead to prioritise it; they've been notified.")
+            else:
+                parts.append("If it's urgent for you, I can ask the team lead to prioritise it now.")
+                buttons = [CHASE]
+        others = [o for o in self.store.tickets(employee_id=self._employee["Employee_ID"])
+                  if o["ticket_id"] != t["ticket_id"] and o["status"] not in DONE_STATUSES]
+        if others:
+            parts.append(f"You have {len(others)} other open ticket{'s' if len(others) > 1 else ''}; "
+                         "you'll find them all under **My tickets**.")
+        parts.append("If anything has changed, such as a new error message, just describe it here or attach a "
+                     "screenshot.")
+        return Reply("\n\n".join(parts), quick_replies=buttons)
+
+    def _chase(self) -> Reply:
+        """The employee asks for their waiting ticket to be prioritised: the team lead (supervisors) and the
+        owner are notified, and it's on the ticket's timeline. Once per ticket per conversation."""
+        st = self._st
+        t = self.tickets.get(st["ticket_id"])
+        if st.get("chased") != t["ticket_id"]:
+            st["chased"] = t["ticket_id"]
+            name = self._employee.get("Full_Name") or self._employee.get("Employee_ID")
+            text = (f"{name} is waiting on {t['ticket_id']} ({t['queue']}, {t['priority']}) and asked for it to be "
+                    "prioritised.")
+            for r in self.store.query("SELECT user_id FROM users WHERE role='supervisor'"):
+                self.notify.notify(r["user_id"], t["ticket_id"], text)
+            if t.get("owner"):
+                self.notify.notify(t["owner"], t["ticket_id"], text)
+            self.store.log_event("Employee asked to prioritise", {"detail": "via chat"}, ticket_id=t["ticket_id"],
+                                 session_id=self._sid, actor=self._employee.get("Employee_ID"))
+            self._t("Chase", f"supervisors{' and owner' if t.get('owner') else ''} notified")
+        return Reply(f"Done. I've let the **{t['queue']}** team lead know you're waiting and asked them to "
+                     f"prioritise **{t['ticket_id']}**. Their reply will appear right here.")
 
     def _ticket_status(self) -> Reply:
         """Answers "where's my ticket?", "which Monday?", "give the exact date": every open ticket with an
@@ -560,13 +625,8 @@ class ConversationService:
             return Reply("You don't have any tickets yet. Tell me what's wrong and I'll help.")
         lines = []
         for t in ts:
-            when = ""
-            if t["status"] not in ("RESOLVED", "CLOSED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION"):
-                sla = self.tickets.sla_status(t)
-                if t["status"] == "ESCALATION_QUEUED" and sla.get("response_eta"):
-                    when = f"\n  First reply expected **{sla['response_eta']}**."
-                elif t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS") and sla.get("resolve_eta"):
-                    when = f"\n  Target to fix: **{sla['resolve_eta']}**."
+            sentence, _late = self._when(t)
+            when = f"\n  {sentence}" if sentence else ""
             mark = " _(this conversation)_" if t["ticket_id"] == current else ""
             lines.append(f"- **{t['ticket_id']}**{mark}: {self.k.name(t['category_id'])}, "
                          f"{t['priority']} ({PRIORITY_WORD.get(t['priority'], 'normal')}). "

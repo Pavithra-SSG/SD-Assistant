@@ -73,7 +73,7 @@ def test_after_handoff_old_buttons_and_when_questions_answer_about_this_ticket(h
     tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
     for msg in ("No, still not working", "which monday?", "give exact date"):
         r = h.chat(emp, sid, msg)
-        assert tid in r["reply"] and "first reply" in r["reply"] and "Before I open a new ticket" not in r["reply"]
+        assert tid in r["reply"] and "first reply" in r["reply"].lower() and "Before I open a new ticket" not in r["reply"]
     assert len(h.api.store.tickets(employee_id=emp)) == 1  # no second ticket opened
 
 
@@ -119,3 +119,36 @@ def test_phishing_report_turns_urgent_when_they_clicked(h):
     assert t["priority"] == "P1" and t["status"] == "ESCALATION_QUEUED"
     assert "don't use that password anywhere else" in r["reply"]
     assert len(h.api.store.tickets(employee_id=emp)) == 1  # the same ticket, upgraded
+
+
+def test_past_due_times_never_say_today():
+    ist = bh._calendar()[0]
+    now = datetime(2026, 10, 3, 12, 30, tzinfo=ist).astimezone(timezone.utc)
+    past = datetime(2026, 9, 28, 13, 0, tzinfo=ist).astimezone(timezone.utc)
+    assert bh.friendly(past, now) == "by 1:00 pm on Monday, 28 Sep"
+
+
+def test_frustrated_follow_up_is_about_this_ticket_with_empathy_and_a_way_to_chase(h):
+    from servicedesk.orchestrator import CHASE
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    r = h.chat(emp, sid, "I really get frustrated when will I get solve of this ticket issue")
+    assert "I'm sorry this is taking longer" in r["reply"] and tid in r["reply"]
+    assert "Here's where your tickets stand" not in r["reply"] and r["quick_replies"] == [CHASE]
+    r = h.chat(emp, sid, CHASE)
+    assert "asked them to prioritise" in r["reply"]
+    sup = h.api.store.one("SELECT COUNT(*) AS n FROM notifications WHERE user_id='EMP2001' AND ticket_id=? "
+                          "AND text LIKE '%prioritised%'", (tid,))
+    assert sup["n"] == 1
+    r = h.chat(emp, sid, "status update please, this is urgent")
+    assert "already asked the team lead" in r["reply"] and not r["quick_replies"]
+
+
+def test_overdue_ticket_says_overdue(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    h.api.store.execute("UPDATE tickets SET created_at='2026-09-01T03:00:00+00:00' WHERE ticket_id=?", (tid,))
+    r = h.chat(emp, sid, "status update")
+    assert "**overdue**" in r["reply"] and "today" not in r["reply"]
