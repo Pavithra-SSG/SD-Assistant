@@ -311,6 +311,7 @@ CI runs the test suite on every push, against both databases.
 | Document | For |
 |---|---|
 | [ServiceDesk_Run_Guide.pdf](docs/ServiceDesk_Run_Guide.pdf) | Step by step: run, share online, use as each role, test with real problems, troubleshoot |
+| [TEST_PLAN.md](docs/TEST_PLAN.md) | Hands-on test script: every category easy → hard, conversation behaviour, agent and supervisor screens |
 | [DEPLOY.md](docs/DEPLOY.md) | Production install, backups and restore, monitoring, CI/CD |
 | [GO-LIVE.md](docs/GO-LIVE.md) | Checklist before real users |
 | [PRIVACY.md](docs/PRIVACY.md) | What personal data is kept, for how long, and who sees it (draft for legal review) |
