@@ -173,6 +173,32 @@ def test_something_else_asks_for_details_before_a_person(h):
     assert details == {"what_happens": "odd stuff, then it goes away", "effect_on_work": "I can't work at all"}
 
 
+def test_a_new_problem_in_the_same_chat_starts_clean(h):
+    """Regression (3 Oct): a second problem in the same chat picked up the first ticket's answers and the
+    model read the old conversation."""
+    import json
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    first = h.chat(emp, sid, "I think I got a phishing email")["ticket_id"]
+    if "What kind of security concern" in h.api.store.messages(sid)[-1]["text"]:
+        h.chat(emp, sid, "Phishing Email")
+    h.chat(emp, sid, "Nothing yet")
+    h.chat(emp, sid, "Skip")  # handed to Security with actions_already_taken = Nothing yet
+    seen = []
+    real = h.api.conv.brain.triage
+    h.api.conv.brain.triage = lambda msg, history: seen.append(history) or real(msg, history)
+    try:
+        r = h.chat(emp, sid, "Outlook isn't sending email")
+    finally:
+        h.api.conv.brain.triage = real
+    assert not any("phishing" in m["text"].lower() for m in seen[0])  # the old problem isn't read again
+    state = json.loads(h.api.store.one("SELECT state_json FROM sessions WHERE session_id=?", (sid,))["state_json"])
+    assert "actions_already_taken" not in state.get("answers", {}) and not state.get("security_report")
+    assert r.get("ticket_id") != first
+    rows = {s["session_id"]: s for s in h.c.get("/chat/sessions", headers=h.login(emp)).json()}
+    assert rows[sid]["n_messages"] > 0 and "in_progress" in rows[sid]
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

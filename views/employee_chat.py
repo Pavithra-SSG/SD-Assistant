@@ -11,24 +11,42 @@ REASONS = {"unclear": "Unclear", "didnt_work": "Didn't work", "wrong_problem": "
 
 sessions = client.get("/chat/sessions")
 chat_sessions = [s for s in sessions if not s["session_id"].startswith("form-")]
+
+
+def fresh_chat() -> str:
+    """A clean conversation for a new problem; an unused one is reused rather than piling up empty chats."""
+    unused = next((s["session_id"] for s in chat_sessions if not s.get("n_messages")), None)
+    return unused or client.post("/chat/sessions")["session_id"]
+
+
 if ss.get("chat_sid") is None:
-    ss.chat_sid = (chat_sessions[0]["session_id"] if chat_sessions else client.post("/chat/sessions")["session_id"])
+    # reopen the last chat only if it's mid-conversation (a question waiting, or a person from IT in it);
+    # otherwise start clean, so a new problem never lands in an old ticket's thread
+    latest = chat_sessions[0] if chat_sessions else None
+    ss.chat_sid = latest["session_id"] if latest and latest.get("in_progress") else fresh_chat()
 
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
     st.markdown("## How can IT help?")
     new_chat = st.button("New conversation", width="content")
 if new_chat:
-    ss.chat_sid = client.post("/chat/sessions")["session_id"]
+    ss.chat_sid = fresh_chat()
     st.rerun()
 
-all_sids = [s["session_id"] for s in sessions]
+# past conversations stay one click away; never-used ones are left out of the list
+all_sids = [s["session_id"] for s in sessions if s.get("n_messages") or s["session_id"] == ss.chat_sid]
 if ss.chat_sid not in all_sids:
     all_sids.insert(0, ss.chat_sid)
+def conversation_label(s: str) -> str:
+    row = next((x for x in sessions if x["session_id"] == s), None)
+    if not row or not row.get("n_messages"):
+        return "New conversation"
+    kind = "From the ticket form" if s.startswith("form-") else "Chat"
+    return f"{kind} · {local(row['updated_at'])}" + (f" · {row['ticket_id']}" if row.get("ticket_id") else "")
+
+
 if len(all_sids) > 1:
     ss.chat_sid = st.selectbox("Conversation", all_sids, index=all_sids.index(ss.chat_sid),
-                               format_func=lambda s: ("From the ticket form · " if s.startswith("form-") else "Chat · ")
-                               + next((local(x["updated_at"]) for x in sessions if x["session_id"] == s), "new"),
-                               label_visibility="collapsed")
+                               format_func=conversation_label, label_visibility="collapsed")
 sid = ss.chat_sid
 
 

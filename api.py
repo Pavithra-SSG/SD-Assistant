@@ -450,7 +450,13 @@ def new_session(user: dict = Depends(employee_only)):
 @app.get("/chat/sessions", tags=[T_CHAT], response_model=list[SessionRow], responses=ERRORS,
          summary="List my conversations")
 def list_sessions(user: dict = Depends(employee_only)):
-    return store.sessions_for(user["employee_id"])
+    """Newest first. `in_progress` marks a chat still waiting on the employee (or with a person in it)."""
+    rows = []
+    for s in store.sessions_for(user["employee_id"]):
+        state = json.loads(s.pop("state_json") or "{}")
+        rows.append({**s, "in_progress": state.get("stage", "IDLE") not in ("IDLE", "ESCALATED"),
+                     "ticket_id": state.get("ticket_id")})
+    return rows
 
 
 @app.post("/chat", tags=[T_CHAT], response_model=ChatOut, responses=ERRORS,

@@ -36,6 +36,10 @@ FIXED, NOT_FIXED, HELP, HUMAN = ("Yes, it's fixed", "No, still not working",
                                  "I need help with a step", "Talk to a human")
 VALIDATION_REPLIES = [FIXED, NOT_FIXED, HELP, HUMAN]
 SOMETHING_ELSE = "Something else"
+# Conversation state that belongs to one problem; cleared when the employee starts a new one in the same chat
+_PER_ISSUE = ("answers", "asked_on", "current_field", "pending_fields", "security_report", "other_detail",
+              "kb_id", "last_display", "last_instructions", "incident", "form", "pending_issue", "issue_context",
+              "triage", "steps_tried", "tool_results", "attempt", "help_resends", "category_id")
 # "Something else": how much it stops their work → (impact, urgency) for the priority matrix
 WORK_IMPACT = {"I can't work at all": ("moderate", "high"),
                "Other people have it too": ("significant", "high"),
@@ -252,7 +256,8 @@ class ConversationService:
                 reply = self._language_handoff()
             elif _NON_ENGLISH_SCRIPT.search(message):
                 reply = self._language_guard(message)
-            else:
+            else:  # not an answer to anything we asked: a new problem (or a hello / status question)
+                self._new_issue()
                 reply = self._triage(message)
         except BrainError as e:
             reply = self._fallback(str(e), message)
@@ -295,6 +300,7 @@ class ConversationService:
         if message == SEPARATE_PROBLEM:
             st["stage"] = "IDLE"
             self._t("Screenshot check", "employee: separate problem → new triage")
+            self._new_issue()
             reply = self._triage(f"Screenshot shows: {p.get('error', '')}")
             reply.text = (f"Okay, I'll treat that as a new problem. Your **{tid}** ticket stays open.\n\n"
                           f"{reply.text or ''}").strip()
@@ -371,8 +377,20 @@ class ConversationService:
         self.tickets.transition(self._st["ticket_id"], status, "bot", reason, **fields)
 
     def _history(self) -> list[dict]:
+        """Recent messages about the CURRENT problem only: an earlier ticket in the same chat must not colour
+        how a new problem is read."""
+        since = self._st.get("history_from", 0)
         return [{"role": m["role"], "text": m["text"]} for m in
-                self.store.messages(self._sid, customer_only=True)[-8:]]
+                self.store.messages(self._sid, customer_only=True) if m["id"] > since][-8:]
+
+    def _new_issue(self) -> None:
+        """The employee is describing a new problem: forget the last one's details (the earlier ticket keeps
+        its own copy) and start the model's reading of the chat from here."""
+        st = self._st
+        for k in _PER_ISSUE:
+            st.pop(k, None)
+        msgs = self.store.messages(self._sid)
+        st["history_from"] = msgs[-1]["id"] if msgs else 0
 
     def _apply_guard(self, flags: dict[str, float]) -> None:
         """SEC-02 / SEC-03: mask secrets, refuse manipulation, keep going on the real issue."""
@@ -1131,6 +1149,7 @@ class ConversationService:
             return self._escalate("User asked for a human.")
         # new_issue: the current ticket stays waiting for validation; start fresh
         st["stage"] = "IDLE"
+        self._new_issue()
         return self._triage(message)
 
     # ---------------------------------------------------------------- bot answers log (spec §8.2)

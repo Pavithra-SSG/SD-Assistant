@@ -122,6 +122,10 @@ class SessionOut(Out):
 class SessionRow(Out):
     session_id: str
     updated_at: str | None
+    in_progress: bool = Field(False, description="True while the bot is waiting for an answer in this chat, or a "
+                                                 "person from IT is chatting in it: reopen it rather than start a new one")
+    n_messages: int = Field(0, description="0 for a conversation that was opened but never used")
+    ticket_id: str | None = Field(None, description="The latest ticket this conversation is about")
 
 
 class ChatOut(Out):

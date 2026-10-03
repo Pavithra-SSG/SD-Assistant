@@ -386,7 +386,8 @@ class Store:
                      (session_id, employee_id, json.dumps(state), now()))
 
     def sessions_for(self, employee_id: str) -> list[dict]:
-        return self.query("SELECT session_id, updated_at FROM sessions WHERE employee_id=? "
+        return self.query("SELECT session_id, updated_at, state_json, (SELECT COUNT(*) FROM messages m WHERE "
+                          "m.session_id=sessions.session_id) AS n_messages FROM sessions WHERE employee_id=? "
                           "ORDER BY updated_at DESC", (employee_id,))
 
     # ---- messages
