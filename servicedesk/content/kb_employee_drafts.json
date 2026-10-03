@@ -89,9 +89,15 @@
   },
   "KB-009": {
     "title": "Request standard software",
-    "summary": "Standard software is licensed centrally, so the Software Asset team assigns a licence to you rather than you buying or downloading it. Please don't install a copy from the internet in the meantime.",
-    "attempt1": {"who": "it", "note": "The Software Asset team checks that the software is pre-approved for your role and that a licence is free, then assigns it to you. That usually takes **less than a working day**. When it's done, it appears in the **Company Portal**, ready to install."},
-    "attempt2": {"who": "it", "note": "No licence was free, so the team will move one from someone who no longer uses it. If none can be moved, they'll raise a purchase request and tell you the expected date. That can take a few working days."}
+    "summary": "Most standard software (Zoom, Teams, Adobe Reader, 7-Zip, Notepad++ and similar) is already approved for everyone and you can install it yourself in a few minutes from the Company Portal. Please don't download a copy from the internet: it won't be licensed or kept up to date.",
+    "attempt1": {"who": "you", "intro": "Check the Company Portal first; if it's there, it's already approved for you:", "steps": [
+      "Open the **Company Portal** from the Start menu (on a Mac, from Applications).",
+      "Search for the software by name, for example **Zoom**.",
+      "If it's listed, select it and choose **Install**. Keep the laptop on and connected (office network or VPN) until it says **Installed**.",
+      "Open it from the Start menu and sign in with your **work account** (for Zoom, choose **Sign in with SSO** and enter your company's domain if asked).",
+      "If it **isn't** listed, or it says **Request** instead of Install, tell me and I'll ask the Software Asset team to assign it to you."],
+      "why": "Everything in the Company Portal is pre-approved and licensed for your role, so there's nothing to wait for."},
+    "attempt2": {"who": "it", "note": "It isn't available to you in the Company Portal yet, so the Software Asset team will check it's approved for your role and assign a licence, usually **within a working day**. It then appears in the Company Portal, ready to install. If no licence is free, they'll move one from someone who no longer uses it or raise a purchase request, and tell you the expected date."}
   },
   "KB-010": {
     "title": "Install software from the Company Portal",
@@ -110,9 +116,14 @@
   },
   "KB-011": {
     "title": "Software licence expired or won't activate",
-    "summary": "When an app says its licence has expired or it can't activate, the licence usually needs reassigning or renewing centrally. It isn't something on your laptop.",
-    "attempt1": {"who": "it", "note": "The Software Asset team checks your licence and reassigns a free one to you, usually **within a working day**. Then close the app, open it again, and sign in with your work account if it asks."},
-    "attempt2": {"who": "it", "note": "No licence was free, so the team is checking the renewal with procurement and will tell you the expected date. If you need the software urgently, tell them, and they can look for a temporary option."}
+    "summary": "When an app says its licence has expired or it can't activate, it's often just holding an old copy of your licence. Signing out and back in with your work account refreshes it, which fixes it in most cases.",
+    "attempt1": {"who": "you", "intro": "Let's refresh the licence:", "steps": [
+      "In the app, sign out: usually **Help → Sign out**, or your profile picture → **Sign out** (Adobe: **Help → Sign Out**; Microsoft Office: **File → Account → Sign out**).",
+      "Close the app completely, then open it again.",
+      "Sign in with your **work email** (not a personal account). If it asks for a licence key, choose **Sign in** instead.",
+      "Restart your laptop if it still shows the old message, then open the app once more."],
+      "why": "Company licences are attached to your work account, and signing in again makes the app fetch your current licence instead of the expired copy it kept."},
+    "attempt2": {"who": "it", "note": "The licence needs looking at centrally. The Software Asset team will check your licence and reassign a free one, usually **within a working day**; if none is free, they'll check the renewal with procurement and tell you the expected date. If you need the software urgently, tell them, and they can look for a temporary option. Once it's done, sign out and back in to the app."}
   },
   "KB-012": {
     "title": "Request new or non-standard software",
@@ -121,18 +132,42 @@
   },
   "KB-013": {
     "title": "Hardware problem",
-    "summary": "Hardware faults need a hands-on check by the hardware team, so I'll collect the details they need to come prepared.",
-    "handoff_message": "**What happens next:** the hardware team will contact you to arrange a repair, a swap or a visit to the IT desk; they'll confirm the timing with you. **Before then:** if you have a spare cable, charger or screen, trying it can show whether the fault is the accessory or the laptop. Please don't open the device, and save your work regularly in case it gets worse."
+    "summary": "Many hardware problems (a blank screen, a dock or monitor not working, a laptop running very hot or slow) come down to a cable, a connection or a stuck state, so let's rule those out before the hardware team gets involved.",
+    "attempt1": {"who": "you", "intro": "A few safe checks first:", "steps": [
+      "Save your work, then **restart** the laptop (Start → Power → **Restart**, not Shut down).",
+      "Unplug and firmly reconnect every cable: power, dock, monitor and USB. If you have a spare cable or charger, try it.",
+      "For a screen problem, press **Windows + P** and choose **Duplicate** or **Extend**; also try the laptop with the dock unplugged.",
+      "For overheating, put the laptop on a hard, flat surface (not a bed or lap) so the air vents are clear, and close apps you aren't using.",
+      "Please don't open the device or remove any covers."],
+      "why": "A restart clears a stuck state, and loose or faulty cables cause a large share of 'hardware' faults. If none of this helps, it's a real fault for the hardware team."},
+    "attempt2": {"who": "it", "note": "This needs a hands-on check, so the **hardware team** will contact you to arrange a repair, a swap or a visit to the IT desk, and confirm the timing with you. They already have your device details and what you've tried. Save your work regularly in case it gets worse."},
+    "handoff_message": "**What happens next:** the hardware team will contact you to arrange a repair, a swap or a visit to the IT desk; they'll confirm the timing with you. Please don't open the device, and save your work regularly in case it gets worse."
   },
   "KB-014": {
     "title": "Laptop won't turn on",
-    "summary": "A laptop that won't turn on usually has a power or battery fault that needs the hardware team, but two quick checks can sometimes bring it back.",
-    "handoff_message": "**Two checks that sometimes bring it back:**\n1. Plug it into a different charger or socket if you can, and leave it for 15 minutes. A completely flat battery shows no light at first.\n2. Hold the power button for **20 seconds**, let go, then press it once normally.\n\n**What happens next:** the hardware team will contact you to arrange a repair or a loan laptop. If it was dropped or got wet, please tell them, and don't try to charge it."
+    "summary": "A laptop that won't turn on is often just completely out of charge or stuck, and these checks bring it back more often than you'd think.",
+    "attempt1": {"who": "you", "intro": "Try these in order:", "steps": [
+      "Plug the charger into a wall socket you know works (not an extension or dock), and check the charger's light or the laptop's charging light.",
+      "If you have another company charger, try that one.",
+      "Leave it charging for **15 minutes**: a completely flat battery shows nothing at first.",
+      "Unplug every accessory and the dock, then hold the power button for **20 seconds**, let go, and press it once normally.",
+      "If the lights come on but the screen stays black, connect an external monitor if you have one, or press **Windows + Ctrl + Shift + B**."],
+      "why": "Most 'dead' laptops have a flat battery, a faulty charger or a stuck power state, and the long press resets the power circuit without opening anything."},
+    "attempt2": {"who": "it", "note": "This needs the **hardware team**, who will contact you to arrange a repair or a loan laptop so you can keep working. Your files saved in OneDrive or on the network are safe. If it was dropped or got wet, please tell them, and don't try to charge it."},
+    "handoff_message": "**What happens next:** the hardware team will contact you to arrange a repair or a loan laptop. If it was dropped or got wet, please tell them, and don't try to charge it."
   },
   "KB-015": {
     "title": "Keyboard, mouse or other accessory not working",
-    "summary": "A faulty keyboard, mouse, headset or dock is repaired or replaced by the hardware team.",
-    "handoff_message": "**Quick checks while you wait:** try a different USB port, and the cable if it's removable. For a wireless device, change the batteries and turn it off and on. If it works in another port, tell the team.\n\n**What happens next:** the hardware team will arrange a replacement. In the office they'll tell you when to collect it from the IT desk; if you work remotely, they'll arrange delivery."
+    "summary": "When a keyboard, mouse, headset or dock stops working, it's very often the port, the batteries or the pairing rather than the device itself.",
+    "attempt1": {"who": "you", "intro": "Let's check the connection:", "steps": [
+      "**Wired:** unplug it and plug it into a **different USB port**, directly on the laptop rather than through the dock or a hub.",
+      "**Wireless:** replace or recharge the batteries, switch the device off and on, and plug its little USB receiver into a different port.",
+      "**Bluetooth:** open **Settings → Bluetooth & devices**, remove the device, then put it in pairing mode and select **Add device**.",
+      "**Dock:** unplug the dock's power for 30 seconds, plug it back in, then reconnect the laptop.",
+      "Restart the laptop and test again."],
+      "why": "Ports, batteries and pairing cause most accessory faults, and a direct connection shows whether the dock or the device is the problem."},
+    "attempt2": {"who": "it", "note": "The accessory needs repairing or replacing, so the **hardware team** will arrange a replacement. In the office they'll tell you when to collect it from the IT desk; if you work remotely, they'll arrange delivery."},
+    "handoff_message": "**What happens next:** the hardware team will arrange a replacement. In the office they'll tell you when to collect it from the IT desk; if you work remotely, they'll arrange delivery."
   },
   "KB-016": {
     "title": "New phone: move your sign-in approvals",
@@ -180,9 +215,14 @@
   },
   "KB-020": {
     "title": "Access to a standard application",
-    "summary": "Access to standard business applications is granted from the approved access list for your role, without a separate approval for standard roles.",
-    "attempt1": {"who": "it", "note": "The Application Access team checks your role against the approved access list and grants it, usually **within a working day**. You'll get a notification when it's done; then sign out of the app and back in."},
-    "attempt2": {"who": "it", "note": "Your access has been granted but hasn't reached the app yet. That can take up to a few hours. The team will check your group membership and push it through. Signing out completely and back in (or restarting your laptop) picks it up once it's there."}
+    "summary": "Standard business applications (Salesforce, Jira, Confluence, ServiceNow and similar) are granted from the approved access list for your role. Often you already have access and the app just hasn't picked it up, so let's check that first.",
+    "attempt1": {"who": "you", "intro": "Check whether you already have it:", "steps": [
+      "Open **My Apps** (myapps.microsoft.com, or the apps launcher in Office 365) and look for the application. If it's there, open it from that tile.",
+      "If it's there but says **Access denied**, sign out of the app completely, close your browser, and sign in again with your work account. New access is only picked up at sign-in.",
+      "If it isn't in My Apps at all, select **Request access** there (or **+ Add apps**), choose the app and the role you need, and submit. Standard roles are approved automatically.",
+      "Tell me what happened, including any error message."],
+      "why": "Access is attached to your work account when you sign in, so a fresh sign-in picks up anything granted recently, and standard roles can be requested without waiting for anyone."},
+    "attempt2": {"who": "it", "note": "The Application Access team will check your role against the approved access list and grant it, usually **within a working day**, or push through access that's been granted but hasn't reached the app yet. You'll get a notification when it's done; then sign out of the app and back in. If the role needs approval, they'll ask your manager for you."}
   },
   "KB-021": {
     "title": "Admin or privileged access",

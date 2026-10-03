@@ -27,7 +27,7 @@ from .directory import employee_profile
 from .knowledge import ATTEMPT_2_FALLBACK, INCIDENT_CATEGORIES, OTHER_CATEGORY, get_knowledge
 from .services.alerts import AlertService
 from .services.attachments import AttachmentService, problem_lines, summary_for_bot
-from .services.kb import KnowledgeService
+from .services.kb import KnowledgeService, _step_text
 from .services.notify import NotificationService
 from .services.tickets import TicketService, employee_label
 from .store import Store, now
@@ -39,7 +39,8 @@ SOMETHING_ELSE = "Something else"
 # Conversation state that belongs to one problem; cleared when the employee starts a new one in the same chat
 _PER_ISSUE = ("answers", "asked_on", "current_field", "pending_fields", "security_report", "other_detail",
               "kb_id", "last_display", "last_instructions", "incident", "form", "pending_issue", "issue_context",
-              "triage", "steps_tried", "tool_results", "attempt", "help_resends", "category_id")
+              "triage", "steps_tried", "tool_results", "attempt", "help_resends", "category_id", "rerouted",
+              "clarified")
 # "Something else": how much it stops their work → (impact, urgency) for the priority matrix
 WORK_IMPACT = {"I can't work at all": ("moderate", "high"),
                "Other people have it too": ("significant", "high"),
@@ -146,7 +147,9 @@ _AFTER_ACTION = {
 }
 # Category questions that don't apply to a particular fix: installing approved software from the portal or
 # fixing an expired licence needs no business justification ("your manager sees this when approving")
-_NOT_NEEDED_FOR = {"KB-010": ("business_justification", "preferred_version"),
+_NOT_NEEDED_FOR = {"KB-009": ("business_justification", "preferred_version"),  # Company Portal first; asked if
+                   "KB-010": ("business_justification", "preferred_version"),  # a licence has to be requested
+
                    "KB-011": ("business_justification", "preferred_version")}
 _PERSON_DOES = {"KB-002": "**reset your password**", "KB-003": "**unlock your account**",
                 "KB-016": "**move your sign-in approvals to your new phone**"}
@@ -276,6 +279,12 @@ class ConversationService:
                 reply = self._on_confirm_incident(message)
             elif stage == "CONFIRM_SCOPE":
                 reply = self._on_confirm_scope(message)
+            elif stage == "CLARIFY":  # more detail: read the whole thing again, in every category
+                st["stage"] = "IDLE"
+                st["issue_context"] = f"{st.get('issue_context', '')}\n{message}".strip()
+                st.pop("rerouted", None)
+                self.store.update_ticket(st["ticket_id"], summary=st["issue_context"][:300])
+                reply = self._ground_and_continue(st["category_id"])
             elif stage == "CONFIRM_OLD_PHONE":
                 st["stage"] = "IDLE"
                 st.setdefault("answers", {})["old_phone"] = (OLD_PHONE_YES if message == OLD_PHONE_YES or re.match(
@@ -609,12 +618,16 @@ class ConversationService:
         if not dup:
             return None
         if dup["ticket_id"] == st.get("ticket_id"):  # more detail about this chat's own ticket: just add it
+            # (the message itself is saved on this chat with the ticket's id by _finish: never save it twice)
             self._t("Duplicate guard", f"same category as this chat's {dup['ticket_id']} → added, no question")
-            st.update(dup_ticket=dup["ticket_id"], dup_category=cat)
-            reply = self._on_confirm_duplicate(SAME_ISSUE)
-            reply.text = (f"Thanks, I've added that to **{dup['ticket_id']}** so the team sees it. "
-                          f"It's currently **{employee_label(dup, self.tickets.user_name(dup['owner']))}**.")
-            return reply
+            if dup["owner"]:
+                self.notify.notify(dup["owner"], dup["ticket_id"], f"Employee added more detail to {dup['ticket_id']}.")
+            when, _late = self._when(dup)
+            return Reply(f"That's part of the same problem, so I've added it to **{dup['ticket_id']}** rather than "
+                         f"open a new ticket. It's with the **{dup['queue']}** team, who can see everything you've "
+                         f"told me.\n\n{when + ' _(Times are IST.)_' + chr(10) * 2 if when else ''}"
+                         "If this is actually a **different** problem, "
+                         "press **New conversation** at the top and describe it there.", ticket_id=dup["ticket_id"])
         st.update(stage="CONFIRM_DUPLICATE", dup_ticket=dup["ticket_id"], dup_category=cat)
         self._t("Duplicate guard", f"open {self.k.name(cat)} ticket {dup['ticket_id']} in the last "
                                    f"{config.DUPLICATE_WINDOW_HOURS}h → asking user")
@@ -1013,6 +1026,31 @@ class ConversationService:
         self._t("Retriever", self._kb_trace(g.kb_scores), g.raw)
         self._save_kb_scores(g.kb_scores)
         best_id, best_p = max(g.kb_scores.items(), key=lambda x: x[1], default=(None, 0))
+        if best_p < config.KB_MIN_RELEVANCE and st.get("rerouted") != st["ticket_id"]:
+            # nothing fits in this category: look across every article once before giving up ("I need zoom" was
+            # filed under Collaboration Tools, but the answer is the software article: install from the portal)
+            st["rerouted"] = st["ticket_id"]
+            others = [a for a in self.k.kb.values() if a.kb_id not in g.kb_scores
+                      and a.category_id != "CAT-09" and not a.is_handoff]
+            g2 = self.brain.ground(st["issue_context"], others, [])
+            alt, alt_p = max(g2.kb_scores.items(), key=lambda x: x[1], default=(None, 0))
+            if alt and alt_p >= config.KB_MIN_RELEVANCE:
+                new_cat = self.k.kb[alt].category_id
+                self._t("Retriever", f"no fit in {self.k.name(cat)} (best {_pct(best_p)}) → {alt} in "
+                                     f"{self.k.name(new_cat)} {_pct(alt_p)}; ticket re-routed")
+                self.store.update_ticket(st["ticket_id"], category_id=new_cat, queue=self.k.queue(new_cat),
+                                         sub_agent=self.k.sub_agent(new_cat), ticket_type=self.k.ticket_type(new_cat))
+                st["category_id"] = new_cat
+                st["triage"]["categories"] = [(new_cat, alt_p)]  # don't pull the old category back in
+                return self._ground_and_continue(new_cat)
+            self._t("Retriever", f"no fit anywhere else either (best {alt} {_pct(alt_p)})")
+        if best_p < config.KB_MIN_RELEVANCE and st.get("clarified") != st["ticket_id"]:
+            # a real agent asks before handing over: "I need zoom" could mean install it or it isn't working
+            st.update(clarified=st["ticket_id"], stage="CLARIFY")
+            self._t("Clarify", f"no article fits yet (best {_pct(best_p)}) → asking for more detail once")
+            return Reply("I want to make sure I give you the right fix, so **could you tell me a bit more?**\n\n"
+                         "- What are you trying to do? (for example, install something, sign in, join a call)\n"
+                         "- What happens when you try, and is there an error message?")
         if best_p < config.KB_MIN_RELEVANCE:
             self._gap(cat, st["issue_context"], (best_id, best_p))
             return self._escalate(f"No KB article judged relevant (best {_pct(best_p)}) — bot does not guess.",
@@ -1117,11 +1155,22 @@ class ConversationService:
     def _act(self) -> Reply:
         self._refine_article()
         kb = self.k.kb[self._st["kb_id"]]
-        if kb.is_handoff:
+        if kb.is_handoff and not self._try_first(kb):
             return self._handoff_article(kb)
         if kb.is_verified_tool_action:
             return self._verified_action(kb, attempt=1)
         return self._attempt(1)
+
+    def _live_step(self, kb, n: int) -> dict | None:
+        ev = self.kbs.live(kb.kb_id)
+        return (ev or {}).get(f"attempt{n}")
+
+    def _try_first(self, kb) -> bool:
+        """A hand-off article still gets something to try first when its approved employee version has a step
+        the employee can safely do (a laptop that won't power on: another charger, a 20-second reset). Security
+        reports and approval-only requests (Immediate Escalation, Policy Check) always go straight to a person."""
+        step = self._live_step(kb, 1)
+        return "Data Collection" in kb.handling_mode and bool(step) and step.get("who") == "you"
 
     def _handoff_article(self, kb) -> Reply:
         """Articles a person must handle. Employees get the approved explanation of what happens next; the
@@ -1153,6 +1202,8 @@ class ConversationService:
         st = self._st
         kb = self.k.kb[st["kb_id"]]
         action = kb.attempt_1 if n == 1 else kb.attempt_2
+        if not action and self._live_step(kb, n):  # the approved employee version defines this step
+            action = _step_text(self._live_step(kb, n))
         if n == 2 and not action:
             fb = ATTEMPT_2_FALLBACK.get(kb.kb_id)
             if fb and self.k.kb[fb].is_verified_tool_action:
@@ -1179,14 +1230,17 @@ class ConversationService:
         ev = self.kbs.live(kb.kb_id)
         if who == "it":  # only IT can do this step: explain what happens next instead of instructing
             self._t("Solve", f"attempt {n} of {kb.kb_id} is a team action → hand to the team")
-            lead = (ev["summary"] if ev and n == 1
-                    else "Thanks for trying that. The next step is one for our IT team:" if n == 2 else "")
+            lead = ev["summary"] if ev and n == 1 else "Thanks for trying that." if n == 2 else ""
             return self._escalate(f"{kb.kb_id} attempt {n} needs a team action: {action}",
                                   f"{lead}\n\n{body}".strip())
         if n == 1:
             opener = ev["summary"] if ev else "Let's get this sorted."
-            closing = ("**Did that fix it?**\n\n_If not, I have one more thing to try before bringing in someone "
-                       "from IT._")
+            step2 = self._live_step(kb, 2)
+            more = (step2.get("who") == "you" if step2 else bool(kb.attempt_2 or ATTEMPT_2_FALLBACK.get(kb.kb_id)))
+            closing = ("**Did that fix it?**\n\n" + (
+                "_If not, I have one more thing to try before bringing in someone from IT._" if more else
+                "_If not, I'll pass it to the right team straight away with everything you've tried, so you won't "
+                "need to explain it again._"))
         else:
             opener = "Thanks for trying that. Here's one more thing to try."
             closing = ("**Did that fix it?**\n\n_If not, I'll pass this to the IT team with everything we've tried, "
@@ -1363,11 +1417,8 @@ class ConversationService:
                  f"- **Priority:** {t['priority']} ({PRIORITY_WORD.get(t['priority'], 'normal')})"]
         if eta:
             lines.append(f"- **First reply expected:** {eta}")
-        note = ""
-        if sla.get("clock") == "24x7":
-            note = "_This is handled around the clock, including evenings and weekends._"
-        elif eta and "today" not in eta:
-            note = f"_The team works {bh.working_hours_text()}, so that's their next working time._"
+        note = ("_This is handled around the clock, including evenings and weekends._"
+                if sla.get("clock") == "24x7" else "")
         body = "\n".join(lines) + (f"\n\n{note}" if note else "")
         return (f"{body}\n\nThey'll see this whole conversation and everything we've tried, so you won't need to "
                 "explain it again. Their reply will appear right here and under **My tickets**.")

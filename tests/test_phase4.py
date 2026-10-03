@@ -63,7 +63,11 @@ def test_team_only_step_is_explained_not_instructed(h):
         r = h.chat(emp, sid, r["quick_replies"][0] if r["quick_replies"] else "Microsoft Visio Standard, for audit")
     t = h.ticket(r["ticket_id"])
     if t["kb_id"] == "KB-009":  # the mock may route elsewhere; when it's the licence article, check the wording
+        # step 1 is something they can do (the Company Portal); step 2 is the team's, explained not instructed
+        assert "Company Portal" in r["reply"] and "pass it to the right team straight away" in r["reply"]
+        r = h.chat(emp, sid, "No, still not working")
         assert "passed this to" in r["reply"] and "check catalog entitlement" not in r["reply"].lower()
+        assert "Software Asset team will check" in r["reply"]
 
 
 def test_meaning_check_and_approval_flow(h):

@@ -364,6 +364,34 @@ def test_new_phone_asks_for_the_old_phone_before_any_approval(h):
             assert "approved" not in r["reply"] and "move your sign-in approvals to your new phone" in r["reply"]
 
 
+def test_hardware_gets_safe_checks_before_the_hardware_team(h):
+    """Real-product behaviour: a dead laptop gets the charger / 20-second checks with 'did that fix it?', and the
+    hardware team only after they didn't help. No 'team works 9 to 6' line in any hand-off."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    r = h.chat(emp, sid, "my laptop won't power on, no lights at all")
+    r = _answer_until(h, emp, sid, r, lambda x: x.get("attempt") or "passed this to" in (x["reply"] or ""), [],)
+    t = h.ticket(r["ticket_id"])
+    if t["kb_id"] != "KB-014":
+        return  # the mock routed elsewhere
+    assert "20 seconds" in r["reply"] and "passed this to" not in r["reply"] and r.get("attempt") == 1
+    r = h.chat(emp, sid, "No, still not working")
+    assert "passed this to the **End User Hardware**" in r["reply"] and "loan laptop" in r["reply"]
+    assert "The team works" not in r["reply"]
+
+
+def test_more_detail_in_the_same_chat_is_saved_once(h):
+    """Regression (4 Oct): 'my account got locked' appeared twice in the chat after being added to the ticket."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    r = h.chat(emp, sid, "I also got another email from the same sender")
+    if tid not in (r["reply"] or ""):
+        return  # judged a different problem
+    texts = [m["text"] for m in h.api.store.messages(sid) if m["role"] == "user"]
+    assert texts.count("I also got another email from the same sender") == 1
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)
