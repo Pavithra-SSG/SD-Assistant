@@ -54,6 +54,10 @@ Highlights:
 
 - **Screenshots are read on the server.** RapidOCR runs locally, so images never leave the company. Passwords and codes are blurred, error codes are picked out, and the bot quotes the actual error line.
 - **Answers sound human but are never invented.** Every reply comes from a supervisor-approved, employee-friendly article or a fixed template.
+- **An answer first, then a person.** Every problem an employee can safely fix gets real steps before any hand-off: a dead laptop gets the charger and 20-second checks, software gets the Company Portal, an expired licence gets a sign-out and sign-in. When nothing fits, the bot searches every category and asks one clarifying question before bringing in a person. Security reports, approvals and a lost phone always go straight to a person.
+- **One problem, one ticket, one conversation.** A different problem in a chat that already has a ticket gets "Shall I open a separate ticket?": *Yes* starts it in a new conversation, *No* adds it to the existing ticket. "Thank you" closes the conversation; the next message starts a fresh one.
+- **An approved catalogue** (`servicedesk/content/catalog.json`) tells business systems (Jira: access steps) from standard software (Zoom: install from the Company Portal), licensed software (Tableau: licence request) and anything not listed (security and licensing review). Replace the example lists with your organisation's own.
+- **Identity checks that match what the employee said.** No working authenticator, or a new phone without the old one, means a person verifies them; the bot never claims an approval it can't get.
 - **Realistic targets per type of problem** (`servicedesk/content/service_targets.json`): a password reset gets a reply in 30 minutes and a fix within 4 hours; a hardware repair, 4 hours and 2 working days. Business hours in Asia/Kolkata with holidays; P1, sign-in, MFA, security and a lost phone run 24×7. Employees see exact times such as "by 5:00 pm tomorrow (Sun 4 Oct)".
 - **Feedback loop:** 👍/👎 on answers, 1–5 ratings on tickets, knowledge-gap tracking, and agents' category corrections.
 - **Privacy built in** (written with India's DPDP Act in mind): retention limits, "download my data", and a log of every time staff open a ticket.
@@ -272,6 +276,11 @@ servicedesk/
   store.py          SQLite or Postgres, migrations, append-only events
   services/         tickets · auth · alerts · notify · analytics · kb · attachments (OCR) · privacy
   tools.py          simulated IT tools (swap point for real AD/Intune/ITSM)
+  content/          editable without code changes (restart the API to load):
+    kb_employee_drafts.json  employee-facing versions of all 31 articles (steps, timings, what to have ready)
+    field_questions.json     how each detail is asked, with answer buttons
+    service_targets.json     reply / fix hours per category and priority
+    catalog.json             approved business systems, standard and licensed software
 
 views/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
 ui/                 API client, shared styles, charts
