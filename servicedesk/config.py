@@ -106,11 +106,7 @@ HOLIDAYS_FILE = os.getenv("HOLIDAYS_FILE", "")  # one YYYY-MM-DD per line, # com
 SLA_24X7_PRIORITIES = tuple(p.strip() for p in os.getenv("SLA_24X7_PRIORITIES", "P1").split(",") if p.strip())
 # A screenshot mid-ticket is treated as "a different problem" (and the employee is asked) only when Jev is at
 # least this sure it belongs to another category and gives the ticket's own category under 20%.
-SCREENSHOT_MISMATCH_CONFIDENCE = float(os.getenv("SCREENSHOT_MISMATCH_CONFIDENCE", "0.6"))
-# "Not an IT question" is overruled when Jev is at least this sure the message belongs to an IT category
-# (3 Oct: "I am unable to join a meeting" was out_of_scope 88% but Collaboration Tools 95%).
-OUT_OF_SCOPE_OVERRULE = float(os.getenv("OUT_OF_SCOPE_OVERRULE", "0.8"))
-# routing_matrix After_Hours_Rule: "24x7 for P1/security": security incidents never wait for Monday either.
+SCREENSHOT_MISMATCH_CONFIDENCE = float(os.getenv("SCREENSHOT_MISMATCH_CONFIDENCE", "0.6"))# routing_matrix After_Hours_Rule: "24x7 for P1/security": security incidents never wait for Monday either.
 # Sign-in and MFA lockouts (CAT-01, CAT-05) are added too: someone locked out can't work at all, so
 # "first reply on Monday" for a Saturday password problem isn't acceptable (decided 3 Oct 2026).
 SLA_24X7_CATEGORIES = tuple(c.strip() for c in os.getenv("SLA_24X7_CATEGORIES", "CAT-01,CAT-05,CAT-09").split(",")

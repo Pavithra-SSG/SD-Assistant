@@ -220,9 +220,15 @@ def test_a_confident_it_category_beats_not_it(h):
                       category_confidence=(cats or t.categories)[0][1], impact=t.impact, urgency=t.urgency,
                       flags=t.flags, raw=t.raw)
     try:
-        brain.triage = lambda m, hist: says_not_it(m, hist, [("CAT-11", .95), ("OTHER", .05)])
-        r = h.chat(emp, h.new_session(emp), "i am unable to join a meeting")
-        assert "doesn't look like an IT problem" not in r["reply"] and r.get("ticket_id")
+        for cats in ([("CAT-11", .95), ("OTHER", .05)], [("CAT-11", .79), ("OTHER", .21)]):  # 79%: the 2nd report
+            brain.triage = lambda m, hist, cats=cats: says_not_it(m, hist, cats)
+            emp = h.fresh_employee()  # a second meeting ticket for the same person would hit the duplicate guard
+            r = h.chat(emp, h.new_session(emp), "I am unable to join in the meeting")
+            assert "doesn't look like an IT problem" not in r["reply"] and r.get("ticket_id")
+        brain.triage = lambda m, hist: says_not_it(m, hist, [("CAT-11", .35), ("OTHER", .3), ("CAT-04", .2)])
+        emp = h.fresh_employee()
+        r = h.chat(emp, h.new_session(emp), "the meeting thing isn't working")
+        assert "which of these is closest" in r["reply"]  # a weak IT match is confirmed, never turned away
         brain.triage = lambda m, hist: says_not_it(m, hist, [("OTHER", .9), ("CAT-11", .1)])
         sid = h.new_session(emp)
         r = h.chat(emp, sid, "what's the canteen menu today")

@@ -104,9 +104,11 @@ def _reply_extras(r: Reply) -> dict:
     return {"attempt": r.meta.get("attempt"), "message_id": r.message_id, "can_rate": bool(r.meta.get("rate"))}
 
 
-def cat_confident(tri) -> bool:
-    """Jev is sure the message is about one of the IT categories (not Other)."""
-    return tri.category != OTHER_CATEGORY and tri.category_confidence >= config.OUT_OF_SCOPE_OVERRULE
+def looks_like_it(tri) -> bool:
+    """Jev's best match is one of the IT categories, not Other. Then "not an IT question" is never the answer:
+    a weak match is confirmed with the employee instead (3 Oct: "I am unable to join in the meeting" was
+    out_of_scope 94% with Collaboration Tools 79%; any fixed confidence bar has a case just under it)."""
+    return tri.category != OTHER_CATEGORY
 
 
 def _pct(p: float) -> str:
@@ -453,10 +455,9 @@ class ConversationService:
             return Reply("Could you describe the problem again, without the password or code? "
                          "For example: \"my password isn't accepted on the VPN\".")
         intent = "report_it_problem" if (force_ticket or danger) else tri.intent
-        if intent == "out_of_scope" and cat_confident(tri):
-            # "I can't join a meeting" was called not-IT while Collaboration Tools scored 95%: a confident IT
-            # category wins over the out-of-scope guess
-            self._t("Intent router", f"out_of_scope overruled: {self.k.name(tri.category)} "
+        if intent == "out_of_scope" and looks_like_it(tri):
+            # the best match is an IT category: treat it as IT (a weak match gets "which of these is closest?")
+            self._t("Intent router", f"out_of_scope overruled: best match {self.k.name(tri.category)} "
                                      f"{_pct(tri.category_confidence)} is an IT category")
             intent = "report_it_problem"
 
