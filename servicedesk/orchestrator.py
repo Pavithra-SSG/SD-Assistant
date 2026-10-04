@@ -181,6 +181,14 @@ FIELD_VALUE_SURE = 0.6  # a button the message already answers is filled in, not
 # never filled in from the message: the answer decides how we confirm it's them ("does your authenticator still
 # work?"), so they always answer it themselves
 _ALWAYS_ASK = {"mfa_still_working", "backup_codes_available"}
+# answers the employee's own words already give in plain terms (4 Oct: "how do I set up my authenticator on a new
+# phone" was still asked "have you changed or reset your phone recently?": Jev was only 54% sure)
+_SAID_PLAINLY = {
+    "device_change": (re.compile(r"(?i)\b(new|replacement|another|different) (phone|mobile|iphone|android|handset)\b|"
+                                 r"\b(changed|replaced|switched|swapped|upgraded|reset|factory[- ]reset) (my )?"
+                                 r"(phone|mobile|iphone|android)\b|\bphone (was|got|has been) (reset|replaced|wiped)\b"),
+                      "Yes"),
+}
 
 
 def _with_buttons(f: dict) -> dict:
@@ -1255,6 +1263,11 @@ class ConversationService:
             if p >= FIELD_VALUE_SURE and name not in st["answers"]:
                 st["answers"][name] = value
                 self._t("Understand", f"{name} = {value!r} from the message ({_pct(p)})")
+        for name, (pattern, value) in _SAID_PLAINLY.items():  # words that leave no doubt, whatever Jev's score
+            if name not in st["answers"] and any(f["Field_Name"] == name for f in fields) \
+                    and pattern.search(st["issue_context"].split("\n")[0]):
+                st["answers"][name] = value
+                self._t("Understand", f"{name} = {value!r}: the message says so in as many words")
         missing = [f for f in fields if g.field_provided.get(f["Field_Name"], 0) < config.FIELD_PROVIDED_THRESHOLD
                    and f["Field_Name"] not in _NOT_NEEDED_FOR.get(kb.kb_id, ()) and f["Field_Name"] not in st["answers"]]
         name_field = {"CAT-03": "software_name", "CAT-07": "application_name"}.get(cat)

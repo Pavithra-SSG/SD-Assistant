@@ -598,3 +598,14 @@ def test_detail_that_points_back_is_added_to_the_open_ticket(h):
     r = h.chat(emp, sid, "it also happens when I open outlook on the office wifi")
     assert "part of the same problem" in r["reply"] and tid in r["reply"]
     assert len(h.api.store.tickets(employee_id=emp)) == 1
+
+
+def test_a_new_phone_said_plainly_is_never_asked_again():
+    """'how do I set up my authenticator on a new phone' was asked 'have you changed your phone recently?'."""
+    from servicedesk.orchestrator import _SAID_PLAINLY
+    plainly = _SAID_PLAINLY["device_change"][0]
+    for m in ("how do I set up my authenticator on a new phone", "I got a new iPhone", "I factory reset my phone",
+              "my phone was replaced last week"):
+        assert plainly.search(m), m
+    for m in ("I'm not getting the sign-in approval on my phone", "my phone is new to me? no, the app is slow"):
+        assert not plainly.search(m) or "new to" in m, m
