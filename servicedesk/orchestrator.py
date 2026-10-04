@@ -30,7 +30,7 @@ from .services.attachments import AttachmentService, problem_lines, summary_for_
 from .services.kb import KnowledgeService, _step_text
 from .services.notify import NotificationService
 from .services.tickets import TicketService, employee_label
-from .store import Store, now
+from .store import Store, now, now_ms
 
 FIXED, NOT_FIXED, HELP, HUMAN = ("Yes, it's fixed", "No, still not working",
                                  "I need help with a step", "Talk to a human")
@@ -76,6 +76,23 @@ _FRUSTRATION = re.compile(r"(?i)\b(frustrat\w*|annoy\w*|angry|upset|fed up|ridic
                           r"urgent(ly)?|how much longer|taking (so|too) long)\b")
 # "status update", "any update?", "progress?" (but not "Windows update failed": that's a new problem)
 _STATUS_WORDS = re.compile(r"(?i)(\bstatus\b|\bany updates?\b|\bupdate on\b|^\s*updates?\W*$|\bprogress\b|\bany news\b)")
+# a message that points back at the problem we're on: "it also drops ...", "same thing on ...", "still ..."
+_REFERS_BACK = re.compile(r"(?i)\s*(it|it'?s|its|and it|it also|also it|same|the same|still)\b")
+
+
+def _asks_when(message: str) -> bool:
+    """ "When will it be fixed?", "which Monday?", "give exact date" ask about timing; "it also drops when I use
+    the office Wi-Fi" is new detail (4 Oct: that got a status reply instead of being added to the ticket). Only a
+    bare "when" is ambiguous: it counts as a question at the start of the message or with a question mark."""
+    m = message.strip()
+    hit = _TIMING_QUESTION.search(m)
+    if not hit:
+        return False
+    if hit.group(0).lower() != "when":
+        return True
+    return m.endswith("?") or bool(re.match(r"(?i)([^.?!]*,\s*)?when\b", m))
+
+
 _TIMING_QUESTION = re.compile(r"(?i)\b(when|which (day|date|monday|tuesday|wednesday|thursday|friday|saturday|"
                               r"sunday)|what (time|day|date)|exact (date|time|day)|eta|how long)\b")
 
@@ -134,6 +151,48 @@ def catalog_kind(name: str) -> str | None:
     return best[1]
 
 
+_NAME_AFTER = re.compile(r"(?i)\b(?:install|download|need|want|get|use|request|access to|licen[cs]e for|"
+                         r"permission (?:to|for)|account (?:on|for))\s+(?:the\s+|a\s+|an\s+|to\s+install\s+|"
+                         r"to\s+use\s+|access\s+to\s+)?([a-z0-9][\w.+#\-]*)")
+_NOT_A_NAME = {"a", "an", "the", "it", "this", "that", "some", "something", "software", "app", "application", "apps",
+               "applications", "program", "tool", "access", "help", "new", "my", "to", "install", "admin", "licence",
+               "license", "permission", "permissions", "approval", "the", "more", "another", "one"}
+
+
+def software_named_in(text: str) -> str | None:
+    """The software or system named in the employee's own words: a catalogue entry if one is mentioned, else the
+    word after "install / need / access to" ("I need to install ollama" → ollama). None when nothing is named."""
+    n, best = f" {_norm(text)} ", ""
+    for items in (_CATALOG.get(key, []) for key in _KIND):
+        for item in items:
+            i = _norm(item)
+            if i and f" {i} " in n and len(i) > len(_norm(best)):
+                best = item
+    if best:
+        return best
+    for m in _NAME_AFTER.finditer(text.split("\n")[0]):  # their first message, not our questions after it
+        name = m.group(1).strip(" .,!?-")
+        if name and name.lower() not in _NOT_A_NAME:
+            return name
+    return None
+
+
+FIELD_VALUE_SURE = 0.6  # a button the message already answers is filled in, not asked
+# never filled in from the message: the answer decides how we confirm it's them ("does your authenticator still
+# work?"), so they always answer it themselves
+_ALWAYS_ASK = {"mfa_still_working", "backup_codes_available"}
+
+
+def _with_buttons(f: dict) -> dict:
+    """The field plus its question and buttons, so Jev can tell which button the message already answers
+    ("how do I set up my authenticator on a new phone" was asked "have you changed your phone recently?")."""
+    ask, opts = field_question(f)
+    opts = [o for o in opts if o != TYPE_OWN]
+    if len(opts) < 2 or f["Field_Name"] in _ALWAYS_ASK:
+        return f
+    return {**f, "_options": opts, "_ask": ask}
+
+
 def looks_like_it(tri) -> bool:
     """Jev's best match is one of the IT categories, not Other. Then "not an IT question" is never the answer:
     a weak match is confirmed with the employee instead (3 Oct: "I am unable to join in the meeting" was
@@ -173,8 +232,13 @@ _AFTER_ACTION = {
 # fixing an expired licence needs no business justification ("your manager sees this when approving")
 _NOT_NEEDED_FOR = {"KB-009": ("business_justification", "preferred_version"),  # Company Portal first; asked if
                    "KB-010": ("business_justification", "preferred_version"),  # a licence has to be requested
-
                    "KB-011": ("business_justification", "preferred_version")}
+_ONLY_WHEN_PRIVILEGED = ("KB-021",)  # admin / elevated access: only when that's what they actually asked for
+# "Which application?" answered with the sign-in app itself: it's an MFA problem, not an access request
+_SIGN_IN_APP = re.compile(r"(?i)\b(authenticator|mfa|2fa|two[- ]factor|multi[- ]factor|sign[- ]in approval|otp|"
+                          r"verification code|one[- ]time code)\b")
+# Outlook "on my phone": the work profile / app on the phone, not the laptop's Outlook profile
+_ON_PHONE = re.compile(r"(?i)\b(phone|mobile|iphone|android|ipad|tablet)\b")
 _PERSON_DOES = {"KB-002": "**reset your password**", "KB-003": "**unlock your account**",
                 "KB-016": "**move your sign-in approvals to your new phone**"}
 OLD_PHONE_YES, OLD_PHONE_NO = "Yes, I still have it", "No, it's gone or reset"
@@ -240,6 +304,7 @@ class ConversationService:
         with self._session_lock(session_id):
             turn = copy.copy(self)
             turn._attachments = attachments or []
+            turn._sent_at = now_ms()  # the employee's message is stored at the time they sent it, before our steps
             return turn._handle(session_id, employee_id, message)
 
     def _begin(self, session_id: str, employee_id: str) -> dict:
@@ -323,10 +388,16 @@ class ConversationService:
                 self.store.update_ticket(st["ticket_id"], summary=st["issue_context"][:300])
                 reply = self._ground_and_continue(st["category_id"])
             elif stage == "CONFIRM_OLD_PHONE":
-                st["stage"] = "IDLE"
-                st.setdefault("answers", {})["old_phone"] = (OLD_PHONE_YES if message == OLD_PHONE_YES or re.match(
-                    r"(?i)\s*(yes|yeah|yep|i (still )?have)", message) else OLD_PHONE_NO)
-                reply = self._verified_action(self.k.kb[st["kb_id"]], attempt=max(1, st.get("attempt", 0) or 1))
+                yes = message == OLD_PHONE_YES or re.match(r"(?i)\s*(yes|yeah|yep|i (still )?have)", message)
+                no = message == OLD_PHONE_NO or re.search(r"(?i)\b(no|nope|lost|gone|reset|broken|stolen|wiped|"
+                                                          r"don'?t have|do not have|gave it|sold|traded)\b", message)
+                if yes or no:
+                    st["stage"] = "IDLE"
+                    st.setdefault("answers", {})["old_phone"] = OLD_PHONE_YES if yes else OLD_PHONE_NO
+                    reply = self._verified_action(self.k.kb[st["kb_id"]], attempt=max(1, st.get("attempt", 0) or 1))
+                else:  # an unclear answer decides how we confirm it's you: ask again, never assume
+                    reply = Reply("Sorry, I need a yes or no for this one. **Do you still have your old phone with the "
+                                  "authenticator app on it?**", quick_replies=[OLD_PHONE_YES, OLD_PHONE_NO])
             elif stage == "CONFIRM_DUPLICATE":
                 reply = self._on_confirm_duplicate(message)
             elif stage == "COLLECTING":
@@ -336,7 +407,7 @@ class ConversationService:
             elif message == CHASE and st.get("ticket_id"):
                 reply = self._chase()
             elif stage == "ESCALATED" and st.get("ticket_id") and (
-                    message in VALIDATION_REPLIES or _TIMING_QUESTION.search(message)
+                    message in VALIDATION_REPLIES or _asks_when(message)
                     or _STATUS_WORDS.search(message) or _FRUSTRATION.search(message)):
                 # old buttons, "when / which Monday?", "status update", "I'm frustrated": about this ticket
                 reply = self._after_handoff(message)
@@ -442,7 +513,7 @@ class ConversationService:
         atts = getattr(self, "_attachments", [])
         if record_user and getattr(self, "_user_text", None) is not None:
             self.store.add_message(sid, "user", self._user_text, ticket_id=st.get("ticket_id"),
-                                   author=self._employee["Employee_ID"],
+                                   author=self._employee["Employee_ID"], created_at=getattr(self, "_sent_at", None),
                                    meta={"attachment_ids": [a["id"] for a in atts]} if atts else None)
         if st.get("ticket_id"):
             self.atts.link_session(sid, st["ticket_id"])
@@ -611,7 +682,12 @@ class ConversationService:
         flags = st.get("triage", {}).get("flags", {})
         if self._risky(flags, "security_incident") or self._risky(flags, "physical_safety"):
             return None  # never delay a security or safety report with a question
-        st.update(stage="CONFIRM_NEW", new_problem={"cat": cat, "prev": prev["ticket_id"]})
+        if prev["status"] not in DONE_STATUSES and _REFERS_BACK.match(message):
+            # "it also drops on the office Wi-Fi": "it" is the problem we're already on (4 Oct: asked "different
+            # problem?" because Jev filed the detail under Network)
+            self._t("Conversation", f"'{message[:30]}…' refers back to {prev['ticket_id']} → added, no question")
+            return self._added_to_ticket(prev)
+        st.update(stage="CONFIRM_NEW", new_problem={"cat": cat, "prev": prev["ticket_id"], "message": message})
         self._t("Conversation", f"different problem ({self.k.name(cat)}) in a chat with {prev['ticket_id']} → asking")
         return Reply(f"That sounds like a **different problem** ({self.k.name(cat)}) from **{prev['ticket_id']}** "
                      f"(_{prev['summary'][:80]}_).\n\n**Shall I open a separate ticket for it?** I'll start it in a "
@@ -632,6 +708,16 @@ class ConversationService:
         if message.startswith(PART_OF) and q.get("prev"):
             prev = self.tickets.get(q["prev"])
             st["ticket_id"] = prev["ticket_id"]
+            if prev["status"] in ("RESOLVED_PENDING_CONFIRMATION", "RESOLVED") and                     self.tickets.within_reopen_window(prev):
+                # 4 Oct: added to a ticket already marked fixed, nobody would ever see it: it goes back to the team
+                prev = self.tickets.reopen(prev["ticket_id"], self._employee["Employee_ID"], q.get("message") or message,
+                                           add_message=False)
+                st["stage"] = "ESCALATED"
+                self._t("Conversation", f"employee: part of {prev['ticket_id']} (was fixed) → reopened for the team")
+                when, _late = self._when(prev)
+                return Reply(f"Okay, no new ticket. **{prev['ticket_id']}** was marked as fixed, so I've reopened it "
+                             f"and sent it back to the **{prev['queue']}** team with what you've just told me."
+                             f"{(' ' + when) if when else ''}", ticket_id=prev["ticket_id"])
             if prev["owner"]:
                 self.notify.notify(prev["owner"], prev["ticket_id"], f"Employee added more detail to {prev['ticket_id']}.")
             self._t("Conversation", f"employee: part of {prev['ticket_id']} → added, no new ticket")
@@ -701,14 +787,7 @@ class ConversationService:
         if dup["ticket_id"] == st.get("ticket_id"):  # more detail about this chat's own ticket: just add it
             # (the message itself is saved on this chat with the ticket's id by _finish: never save it twice)
             self._t("Duplicate guard", f"same category as this chat's {dup['ticket_id']} → added, no question")
-            if dup["owner"]:
-                self.notify.notify(dup["owner"], dup["ticket_id"], f"Employee added more detail to {dup['ticket_id']}.")
-            when, _late = self._when(dup)
-            return Reply(f"That's part of the same problem, so I've added it to **{dup['ticket_id']}** rather than "
-                         f"open a new ticket. It's with the **{dup['queue']}** team, who can see everything you've "
-                         f"told me.\n\n{when + ' _(Times are IST.)_' + chr(10) * 2 if when else ''}"
-                         "If this is actually a **different** problem, "
-                         "press **New conversation** at the top and describe it there.", ticket_id=dup["ticket_id"])
+            return self._added_to_ticket(dup)
         st.update(stage="CONFIRM_DUPLICATE", dup_ticket=dup["ticket_id"], dup_category=cat)
         self._t("Duplicate guard", f"open {self.k.name(cat)} ticket {dup['ticket_id']} in the last "
                                    f"{config.DUPLICATE_WINDOW_HOURS}h → asking user")
@@ -716,6 +795,21 @@ class ConversationService:
         return Reply(f"Before I open a new ticket: is this about **{dup['ticket_id']}**, _{dup['summary'][:90]}_ "
                      f"({label})?",
                      quick_replies=[SAME_ISSUE, NEW_ISSUE])
+
+    def _added_to_ticket(self, t: dict) -> Reply:
+        """More detail about this chat's own open ticket: it's on the ticket (the message is saved on this chat
+        with the ticket's id by _finish, so never save it twice) and the owner hears about it."""
+        self._st["ticket_id"] = t["ticket_id"]
+        self._st["stage"] = "ESCALATED" if t["status"] in ("ESCALATION_QUEUED", "HUMAN_ASSIGNED",
+                                                           "HUMAN_IN_PROGRESS") else self._st.get("stage", "IDLE")
+        if t["owner"]:
+            self.notify.notify(t["owner"], t["ticket_id"], f"Employee added more detail to {t['ticket_id']}.")
+        when, _late = self._when(t)
+        return Reply(f"That's part of the same problem, so I've added it to **{t['ticket_id']}** rather than "
+                     f"open a new ticket. It's with the **{t['queue']}** team, who can see everything you've "
+                     f"told me.\n\n{when + ' _(Times are IST.)_' + chr(10) * 2 if when else ''}"
+                     "If this is actually a **different** problem, "
+                     "press **New conversation** at the top and describe it there.", ticket_id=t["ticket_id"])
 
     def _on_confirm_duplicate(self, message: str) -> Reply:
         st = self._st
@@ -760,18 +854,25 @@ class ConversationService:
         elif ev and ev.get("attempt1"):  # a team action: explain it
             text = f"{ev['summary']} {body}".strip()
         elif ev or not kb.attempt_1:
-            return Reply("That one needs someone from IT rather than a quick fix. Shall I open a ticket for you?",
-                         quick_replies=[OPEN_TICKET])
+            return self._how_to_needs_ticket(kb)
         elif kb.attempt_1:
             text = f"Here's what usually fixes it:\n\n1. {user_voice(kb.attempt_1)}."
             if kb.attempt_2:
                 text += f"\n\nIf that doesn't work: {user_voice(kb.attempt_2)}."
         else:
-            return Reply("That one needs someone from IT rather than a quick fix. Shall I open a ticket for you?",
-                         quick_replies=[OPEN_TICKET])
+            return self._how_to_needs_ticket(kb)
         aid = self._record_answer(kb, 0, plain, ticket_id=None)
         return Reply(f"{text}\n\nIf this is happening to you right now, I can open a ticket and walk you "
                      "through it step by step.", quick_replies=[OPEN_TICKET, "Thanks!"], meta=self._rate(aid))
+
+    def _how_to_needs_ticket(self, kb) -> Reply:
+        """The answer to their "how do I ...?" is something done for them (moving the authenticator to a new phone
+        is a verified action): start it now. 4 Oct: they got "needs someone from IT, shall I open a ticket?" first."""
+        if kb.is_verified_tool_action:
+            self._t("Intent router", f"how-to answered by {kb.kb_id}, an action I do in a ticket → starting it")
+            return self._duplicate_prompt(kb.category_id) or self._plan_ticket(kb.category_id)
+        return Reply("That one needs someone from IT rather than a quick fix. Shall I open a ticket for you?",
+                     quick_replies=[OPEN_TICKET])
 
     def _when(self, t: dict) -> tuple[str, bool]:
         """(sentence about timing, overdue?) for an open ticket. Past times are called overdue, never "today"."""
@@ -1106,11 +1207,17 @@ class ConversationService:
         tri = st["triage"]
         second = [c for c, p in tri["categories"][1:2] if c not in (cat, OTHER_CATEGORY) and p >= 0.2]
         cands = self.k.kb_for_categories([cat] + second)
-        fields = self.k.fields_to_ask(cat)
+        fields = [_with_buttons(f) for f in self.k.fields_to_ask(cat)]
         g = self.brain.ground(st["issue_context"], cands, fields)
         self._t("Retriever", self._kb_trace(g.kb_scores), g.raw)
         self._save_kb_scores(g.kb_scores)
         best_id, best_p = max(g.kb_scores.items(), key=lambda x: x[1], default=(None, 0))
+        if best_id in _ONLY_WHEN_PRIVILEGED and not self._risky(tri.get("flags", {}), "privileged_or_irreversible"):
+            # 4 Oct: "not getting the approval" became an admin-rights approval request; the admin article is only
+            # for someone actually asking for admin or elevated rights (Jev's privileged flag), never a word match
+            best_id, best_p = max(((k, p) for k, p in g.kb_scores.items() if k not in _ONLY_WHEN_PRIVILEGED),
+                                  key=lambda x: x[1], default=(None, 0))
+            self._t("Retriever", f"admin-access article skipped: nothing privileged asked for → {best_id}")
         if best_p < config.KB_MIN_RELEVANCE and st.get("rerouted") != st["ticket_id"]:
             # nothing fits in this category: look across every article once before giving up ("I need zoom" was
             # filed under Collaboration Tools, but the answer is the software article: install from the portal)
@@ -1144,8 +1251,19 @@ class ConversationService:
         st["kb_id"] = kb.kb_id
         self.store.update_ticket(st["ticket_id"], kb_id=kb.kb_id)
 
+        for name, (value, p) in g.field_values.items():  # the message already picked a button: use it, don't ask
+            if p >= FIELD_VALUE_SURE and name not in st["answers"]:
+                st["answers"][name] = value
+                self._t("Understand", f"{name} = {value!r} from the message ({_pct(p)})")
         missing = [f for f in fields if g.field_provided.get(f["Field_Name"], 0) < config.FIELD_PROVIDED_THRESHOLD
-                   and f["Field_Name"] not in _NOT_NEEDED_FOR.get(kb.kb_id, ())]
+                   and f["Field_Name"] not in _NOT_NEEDED_FOR.get(kb.kb_id, ()) and f["Field_Name"] not in st["answers"]]
+        name_field = {"CAT-03": "software_name", "CAT-07": "application_name"}.get(cat)
+        if name_field and name_field not in st["answers"]:
+            named = software_named_in(st["issue_context"])  # "I need to install ollama": the name is in the message
+            if named:
+                st["answers"][name_field] = named
+                missing = [f for f in missing if f["Field_Name"] != name_field]
+                self._t("Understand", f"{name_field} = {named!r} from the message")
         shown = getattr(self, "_screenshot_error", "")
         if shown:  # never ask for the error message the screenshot already shows
             for f in [f for f in missing if "error" in f["Field_Name"].lower()]:
@@ -1163,6 +1281,17 @@ class ConversationService:
             self._t("Understand", f"details already given: {given or 'none'}; will ask: "
                                   f"{[f['Field_Name'] for f in missing[:config.MAX_CLARIFYING_QUESTIONS]]}")
         st["pending_fields"] = missing[:config.MAX_CLARIFYING_QUESTIONS]
+        if name_field and st["answers"].get(name_field):
+            # the catalogue answers first: "ollama" isn't approved, so "what do you need it for?" can wait for the
+            # review team, and Zoom asked for as "access" is software, not an access level
+            ask = self._catalog_check()
+            if ask:
+                st["pending_fields"] = []
+                return ask
+            if st["category_id"] != cat:
+                st["pending_fields"] = []
+            st["pending_fields"] = [f for f in st["pending_fields"]
+                                    if f["Field_Name"] not in _NOT_NEEDED_FOR.get(st["kb_id"], ())]
         if kb.tools and "TOOL-10" in kb.tools:
             res = tools.asset_lookup(self._employee)
             st["tool_results"].append(res)
@@ -1213,10 +1342,22 @@ class ConversationService:
             st["answers"][f["Field_Name"]] = value
             st["issue_context"] += f"\n{f['Help_Text']} {value}"
             self._t("Understand", f"collected {f['Field_Name']}")
+            if f["Field_Name"] == "application_name" and _SIGN_IN_APP.search(value):
+                return self._move_to("CAT-05", f"{value!r} is the sign-in app: this is a sign-in (MFA) problem")
             if f["Field_Name"] == "application_name" and catalog_kind(value) != "business":
                 st["pending_fields"] = []  # "what level of access?" means nothing for software or an unknown name
                 self._t("Understand", f"{value!r} isn't a listed business system → skip the access-level question")
         return self._next_field_or_act()
+
+    def _move_to(self, new_cat: str, why: str) -> Reply:
+        """An answer shows the problem belongs to another team: move the ticket and start that team's questions."""
+        st = self._st
+        self._t("Retriever", f"ticket moved {self.k.name(st['category_id'])} → {self.k.name(new_cat)}: {why}")
+        self.store.update_ticket(st["ticket_id"], category_id=new_cat, queue=self.k.queue(new_cat),
+                                 sub_agent=self.k.sub_agent(new_cat), ticket_type=self.k.ticket_type(new_cat))
+        st.update(category_id=new_cat, pending_fields=[], rerouted=st["ticket_id"])
+        st["triage"]["categories"] = [(new_cat, 1.0)]
+        return self._ground_and_continue(new_cat)
 
     # ================================================================ solve
     def _refine_article(self) -> None:
@@ -1226,6 +1367,10 @@ class ConversationService:
         cat, a, cur = st["category_id"], st.get("answers", {}), st.get("kb_id")
         if cat == "CAT-05" and a.get("device_change") == "Yes" and cur != "KB-016":
             new, why = "KB-016", "phone changed or reset → re-enrol the authenticator"
+        elif cat == "CAT-06" and cur != "KB-030" and (a.get("client") == "Mobile App" or
+                                                      _ON_PHONE.search(st["issue_context"].split("\n")[0])):
+            # 4 Oct: "Outlook on my phone stopped working" got the laptop's safe-mode and Control Panel steps
+            new, why = "KB-030", "email app on the phone → sync, then the phone's work profile"
         elif st.get("asked_on") == st["ticket_id"] and cat not in ("CAT-01", "CAT-05", "CAT-09"):
             # we asked questions: read the answers (sign-in and security questions are about identity, not the fix).
             # Only this category and the ones triage thought plausible: scoring all 31 articles at once moved
@@ -1348,10 +1493,14 @@ class ConversationService:
         if step:
             if step.get("who") == "it":
                 return "it", step.get("note", ""), step.get("note", "")
-            body = f"{step.get('intro') or 'Here is what to try:'}\n\n{_numbered(step['steps'])}"
+            steps = step["steps"]
+            name = (getattr(self, "_st", None) or {}).get("answers", {}).get("software_name")
+            if name:  # "search for the software by name, for example Zoom": say the one they asked for
+                steps = [x.replace("by name, for example **Zoom**", f"by name: **{name}**") for x in steps]
+            body = f"{step.get('intro') or 'Here is what to try:'}\n\n{_numbered(steps)}"
             if step.get("why"):
                 body += f"\n\n_Why this helps: {step['why']}_"
-            return "you", body, " ".join(step["steps"])
+            return "you", body, " ".join(steps)
         action = user_voice((kb.attempt_1 if n == 1 else kb.attempt_2) or "")
         return "you", f"Here is what to try:\n\n1. {action}.", action
 

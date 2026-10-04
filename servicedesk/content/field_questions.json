@@ -10,7 +10,7 @@
 
   "CAT-02.error_message": {"ask": "What happens when the VPN fails to connect?",
     "options": ["It times out or keeps trying", "Username or password error", "It shows an error code",
-                "It connects, then drops", "Connected, but nothing loads"], "type_own": true},
+                "It connects, then drops", "Connected, but nothing loads", "Certificate or \"not trusted\" warning"], "type_own": true},
   "CAT-02.os_version": {"ask": "Which operating system is your laptop on?"},
   "CAT-02.vpn_client_version": {"ask": "Do you know the VPN app's version? You'll find it under Help → About.",
     "options": ["I don't know"], "type_own": true},
@@ -31,7 +31,7 @@
                 "Battery or charging problem", "Physical damage"], "type_own": true},
   "CAT-04.location": {"ask": "Where is the device right now? Floor and desk, or city if you're remote."},
 
-  "CAT-05.mfa_method": {"ask": "Which sign-in method is failing?"},
+  "CAT-05.mfa_method": {"ask": "Which sign-in method do you use?"},
   "CAT-05.device_change": {"ask": "Have you changed or reset your phone recently?"},
   "CAT-05.backup_codes_available": {"ask": "Do you still have your backup codes?", "options": ["Yes", "No", "Not sure"]},
 
@@ -69,5 +69,5 @@
   "CAT-11.issue_type": {"ask": "What's the main problem?"},
 
   "CAT-12.device_os": {"ask": "Is your phone an iPhone or Android?", "options": ["iPhone", "Android", "Other"]},
-  "CAT-12.issue_type": {"ask": "What do you need help with?"}
+  "CAT-12.issue_type": {"ask": "What do you need help with?", "options": ["It says my phone isn't compliant", "Setting up a new phone for work", "Work apps (Outlook, Teams) not working", "Need a work app on the phone", "Lost or stolen phone"], "type_own": true}
 }

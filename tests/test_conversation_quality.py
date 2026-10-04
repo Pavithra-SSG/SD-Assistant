@@ -492,3 +492,109 @@ def test_overdue_ticket_says_overdue(h):
     h.api.store.execute("UPDATE tickets SET created_at='2026-09-01T03:00:00+00:00' WHERE ticket_id=?", (tid,))
     r = h.chat(emp, sid, "status update")
     assert "**overdue**" in r["reply"] and "today" not in r["reply"]
+
+
+# ---------------------------------------------------------------- hands-on test plan run (4 Oct, live Jev)
+def test_names_timing_questions_and_pointing_back_are_read_correctly():
+    from servicedesk.orchestrator import _REFERS_BACK, _asks_when, software_named_in
+    assert software_named_in("I need to install ollama") == "ollama"
+    assert software_named_in("can you install ollama on my laptop") == "ollama"
+    assert software_named_in("can you install Slack on my laptop") == "Slack"
+    assert software_named_in("I need a application") is None and software_named_in("I need help") is None
+    assert _asks_when("when will this be fixed") and _asks_when("give exact date") and _asks_when("which monday?")
+    assert not _asks_when("it also drops when I use the office wifi in the meeting room")
+    assert _REFERS_BACK.match("it also drops on the office wifi") and not _REFERS_BACK.match("also my outlook is down")
+
+
+def _forced(h, cat, scores=None, flags=None):
+    """Make the mock brain file the message under `cat` (and score articles as given)."""
+    from dataclasses import replace
+    brain = h.api.conv.brain
+    real_triage, real_ground = brain.triage, brain.ground
+
+    def triage(m, hist):
+        t = real_triage(m, hist)
+        return replace(t, intent="report_it_problem", categories=[(cat, .9), ("OTHER", .1)], category_confidence=.9,
+                       flags={**t.flags, **(flags or {})})
+
+    def ground(issue, cands, fields):
+        g = real_ground(issue, cands, fields)
+        return replace(g, kb_scores={**g.kb_scores, **{k: v for k, v in (scores or {}).items()
+                                                       if any(a.kb_id == k for a in cands)}})
+    brain.triage, brain.ground = triage, ground
+    return lambda: (setattr(brain, "triage", real_triage), setattr(brain, "ground", real_ground))
+
+
+def test_software_named_in_the_message_gets_the_catalogue_answer_first(h):
+    """'I need to install ollama' was asked 'what do you need it for? your manager sees this' before anything
+    else; the catalogue says straight away that it isn't approved yet and what the review involves."""
+    undo = _forced(h, "CAT-03", {"KB-012": .9})
+    try:
+        emp = h.fresh_employee()
+        r = h.chat(emp, h.new_session(emp), "I need to install ollama")
+    finally:
+        undo()
+    assert "**ollama** isn't in our approved software catalogue" in r["reply"]
+    assert "what do you need it for" not in r["reply"].lower() and h.ticket(r["ticket_id"])["kb_id"] == "KB-012"
+
+
+def test_admin_article_only_for_an_admin_request_and_the_sign_in_app_is_mfa(h):
+    """'not getting the approval' became an admin-access approval request (KB-021 scored highest); answering
+    'Authenticator App' to 'which application?' is the sign-in app: the ticket moves to MFA."""
+    undo = _forced(h, "CAT-07", {"KB-021": .9, "KB-020": .6}, {"privileged_or_irreversible": 0.05})
+    try:
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "not getting the approval")
+        t = h.ticket(r["ticket_id"])
+        assert t["kb_id"] != "KB-021" and "Admin and other privileged access" not in (r["reply"] or "")
+        if "Which application" in (r["reply"] or ""):
+            r = h.chat(emp, sid, "Authenticator App")
+            assert h.ticket(r["ticket_id"])["category_id"] == "CAT-05"
+    finally:
+        undo()
+
+
+def test_outlook_on_the_phone_gets_the_phone_steps(h):
+    """'Outlook on my phone stopped working' got Ctrl + safe mode and Control Panel → Mail (laptop steps)."""
+    undo = _forced(h, "CAT-06", {"KB-018": .9})
+    try:
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "Outlook on my phone stopped working")
+        r = _answer_until(h, emp, sid, r, lambda x: x.get("attempt") or "passed this" in (x["reply"] or ""),
+                          ["Mobile App"])
+    finally:
+        undo()
+    t = h.ticket(r["ticket_id"])
+    assert t["kb_id"] == "KB-030" and t["category_id"] == "CAT-12" and "Control Panel" not in r["reply"]
+
+
+def test_part_of_a_ticket_already_fixed_reopens_it(h):
+    """'No, it's part of TKT-…' on a ticket marked fixed added the message to a closed ticket nobody looks at."""
+    from servicedesk.orchestrator import PART_OF
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    h.api.store.execute("UPDATE tickets SET status='RESOLVED_PENDING_CONFIRMATION', resolved_at=? WHERE ticket_id=?",
+                        (datetime.now(timezone.utc).isoformat(), tid))
+    st = h.api.store.get_session(sid)
+    h.api.store.save_session(sid, emp, {**st, "stage": "IDLE"})
+    r = h.chat(emp, sid, "also my outlook is not syncing")
+    if f"{PART_OF}{tid}" not in r["quick_replies"]:
+        return  # the mock read it as the same kind of problem
+    r = h.chat(emp, sid, f"{PART_OF}{tid}")
+    assert "reopened" in r["reply"] and h.ticket(tid)["status"] == "ESCALATION_QUEUED"
+    texts = [m["text"] for m in h.api.store.messages(sid) if m["role"] == "user"]
+    assert texts.count("also my outlook is not syncing") == 1
+
+
+def test_detail_that_points_back_is_added_to_the_open_ticket(h):
+    """'it also drops when I use the office wifi' after the VPN hand-off got a status reply (the word 'when'),
+    then 'different problem?' (filed under Network). 'it' is the problem we're on: add it."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    r = h.chat(emp, sid, "it also happens when I open outlook on the office wifi")
+    assert "part of the same problem" in r["reply"] and tid in r["reply"]
+    assert len(h.api.store.tickets(employee_id=emp)) == 1

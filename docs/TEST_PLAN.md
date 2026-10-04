@@ -50,7 +50,7 @@ A script to test the service desk by hand, from the employee chat to the agent a
 | Level | Type / press | Should happen |
 |---|---|---|
 | Easy | `VPN won't connect` → **[It times out or keeps trying]** → **[Windows 11]** | Clean-restart steps (exit the app from the ^ tray, clear cache, reconnect, test the intranet). |
-| Medium | `VPN says the server certificate is not trusted` | Check the laptop clock, reinstall the VPN certificate from the Company Portal. Second attempt removes the old certificate and repairs the app. |
+| Medium | `VPN says the server certificate is not trusted` | Doesn't ask "what happens?" (the message already says). Check the laptop clock, reinstall the VPN certificate from the Company Portal. Second attempt removes the old certificate and repairs the app. |
 | Hard | `my VPN keeps dropping every 10 minutes at home` → **[No, still not working]** twice | Attempt 1 update + no sleep; attempt 2 try a phone hotspot; then hand-off to **Network Remote Access** with both attempts listed. |
 
 ### 1.3 Software License & Installation
@@ -60,14 +60,14 @@ A script to test the service desk by hand, from the employee chat to the agent a
 | Easy | `can you install Slack on my laptop` | Company Portal install steps. **No** "what do you need it for / your manager sees this" question. |
 | Medium | `I can't install a application` → `Tableau` | Company Portal first (Tableau is licensed). **[No, still not working]** → Software Asset team assigns a licence, about a working day. |
 | Medium | `Adobe Acrobat says my licence has expired` | Sign out of the app and back in with the work account first; only then the licence team. |
-| Hard | `I need to install ollama` | "**ollama** isn't in our approved software catalogue yet", then the security and licensing review (3–5 working days), "don't download it from the internet". Ticket in **Software Asset Management**. |
+| Hard | `I need to install ollama` | Straight away (no "what do you need it for?" first): "**ollama** isn't in our approved software catalogue yet", then the security and licensing review (3–5 working days), "don't download it from the internet". Ticket in **Software Asset Management**. |
 | Hard | `I need zoom` | Asks "could you tell me a bit more?" → `install it on my laptop for client calls` → Company Portal steps. |
 
 ### 1.4 Hardware & Peripherals
 
 | Level | Type / press | Should happen |
 |---|---|---|
-| Easy | `my wireless mouse stopped working` | Asks location, then port / batteries / Bluetooth re-pair checks with "Did that fix it?". |
+| Easy | `my wireless mouse stopped working` | Asks location only (not "what's happening?"), then port / batteries / Bluetooth re-pair checks with "Did that fix it?". |
 | Medium | `my second monitor shows no signal` → `Floor 3, desk 12` → **[No, still not working]** | Restart, reseat cables, Windows + P; then **End User Hardware** hand-off ("repair, swap or IT desk visit"). |
 | Medium | `my laptop won't turn on at all` → location → **[No, still not working]** | Charger, 15-minute charge, 20-second power hold; then hardware team with a **loan laptop**. |
 | Hard | `my laptop battery is swelling and getting hot` | ⚠️ **Stop using the device now**, unplug it, keep it away from people. Goes straight to a person as **P1**, no troubleshooting. |
@@ -77,15 +77,15 @@ A script to test the service desk by hand, from the employee chat to the agent a
 | Level | Type / press | Should happen |
 |---|---|---|
 | Easy | `I'm not getting the sign-in approval on my phone` → **[Authenticator App]** → **[No]** (phone not changed) | Open the app directly, number matching, automatic time on iPhone/Android, notifications. |
-| Medium | `I got a new phone, how do I move my authenticator` → **[Open a ticket for this]** → **[Authenticator App]** → **[Yes, I still have it]** | Asks about the **old** phone first, then ✅ **Your old sign-in approvals are cleared** + Security info → Add sign-in method steps. |
+| Medium | `I got a new phone, how do I move my authenticator` → **[Yes, I still have it]** | Goes straight to the **old** phone question (no "shall I open a ticket?", no "which method?"), then ✅ **Your old sign-in approvals are cleared** + Security info → Add sign-in method steps. |
 | Hard | Same, but **[No, it's gone or reset]** | No approval claimed; a person will call to move the sign-in approvals (Identity Security, round the clock). |
-| Hard | `not getting the approval` → **[Authenticator App]** → **[Yes]** (phone changed) | Switches to moving the authenticator (asks about the old phone), not "check the app". |
+| Hard | `not getting the approval` → **[Authenticator App]** → **[Yes]** (phone changed) | Switches to moving the authenticator (asks about the old phone), not "check the app". If it first asks "which application?", answering `Authenticator App` moves it to **MFA**; never an admin-access approval. |
 
 ### 1.6 Email & Outlook
 
 | Level | Type / press | Should happen |
 |---|---|---|
-| Easy | `my emails are stuck in the outbox` → **[Outlook Desktop]** | Outlook on the web check, safe mode (hold Ctrl), add-ins, new profile. |
+| Easy | `my emails are stuck in the outbox` → **[Outlook Desktop]** | No "what exactly is going wrong?" question. Outlook on the web check, safe mode (hold Ctrl), add-ins, new profile. |
 | Medium | `some emails are missing from my inbox` → **[Outlook Desktop]** → **[Emails stuck in the Outbox]** | The answer changes the fix: it gives the **Outbox** steps, not the missing-email steps. |
 | Hard | `some emails are missing` → **[Outlook Desktop]** → **[Not receiving new email]** → **[No, still not working]** | Rules / Junk / Other / Update Folder; then **Messaging Support** rebuilds the local copy, "Outlook on the web shows everything meanwhile". |
 
@@ -136,7 +136,7 @@ A script to test the service desk by hand, from the employee chat to the agent a
 | Level | Type / press | Should happen |
 |---|---|---|
 | Easy | `Company Portal says my phone isn't compliant` | System update + screen lock, then Check status / Sync (separate iPhone and Android paths). |
-| Medium | `Outlook on my phone stopped working` → **[No, still not working]** | Sync first, then remove and re-enrol the work profile ("your personal data isn't touched"). |
+| Medium | `Outlook on my phone stopped working` → **[No, still not working]** | Phone steps, never the laptop's safe mode / Control Panel. Ticket in **Mobile Device Management**. Sync first, then remove and re-enrol the work profile ("your personal data isn't touched"). |
 | Hard | `I lost my phone` → **[iPhone]** | Apology, **While you wait** (Find My / Find My Device, don't erase it yourself, police report), Mobile Device Management, handled **around the clock**. |
 
 ---
@@ -147,10 +147,10 @@ A script to test the service desk by hand, from the employee chat to the agent a
 |---|---|---|
 | One problem, one ticket | Fix a VPN problem (**[Yes, it's fixed]**), then type `also my outlook is not syncing` | "That sounds like a **different problem** … Shall I open a separate ticket for it?" |
 | … Yes | **[Yes, open a separate ticket]** | A **new conversation** opens with your Outlook message; the list shows separate chats per ticket. |
-| … No | (repeat) **[No, it's part of TKT-…]** | "Okay, no new ticket. I've added it to TKT-…" |
+| … No | (repeat) **[No, it's part of TKT-…]** | "Okay, no new ticket." The first ticket was marked fixed, so it's **reopened** and goes back to its team with your message. |
 | Thanks closes the chat | After any fix, type `thank you` | "You're welcome! … I've closed this conversation", and a ✅ "This conversation is closed" note. |
 | … next message | Type a new problem | Starts in a **fresh conversation** automatically. |
-| Same problem again | With an escalated ticket open, type more detail about it | "That's part of the same problem, so I've added it to TKT-…", with the team and reply time. Your message appears **once**. |
+| Same problem again | With an escalated ticket open, type more detail about it, e.g. after a VPN hand-off `it also drops when I use the office wifi` | "That's part of the same problem, so I've added it to TKT-…", with the team and reply time. Your message appears **once**. |
 | Not IT | `what's the canteen menu today` | "That doesn't look like an IT problem…" with **[Open a ticket for this]**. |
 | Unclear | `I have a issue with os crash` → **[Something else]** | Asks what happens / when / error message. Vague answer → "How much is this affecting your work?" buttons → Service Desk Duty Manager with a reply time. |
 | Clear after detail | Same, but answer `my laptop shows a blue screen and restarts at random` | Moves to Hardware and continues there. |

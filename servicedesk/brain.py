@@ -119,6 +119,7 @@ class Grounding:
     kb_scores: dict[str, float]      # kb_id -> P(article addresses the issue)
     field_provided: dict[str, float]  # field_name -> P(already provided)
     raw: dict = field(default_factory=dict)
+    field_values: dict[str, tuple[str, float]] = field(default_factory=dict)  # button field -> (option, P)
 
 
 @dataclass
@@ -219,7 +220,7 @@ class JevBrain:
             flags=flags, raw={"model": resp.model, "answers": _dump(resp)})
 
     def ground(self, issue: str, candidates: list[KBArticle], fields: list[dict]) -> Grounding:
-        from typesafe_sdk import Noul
+        from typesafe_sdk import Choice, Noul
 
         state = {"issue": issue, "candidates": [a.summary() for a in candidates]}
         q = {}
@@ -231,12 +232,26 @@ class JevBrain:
             q[f"field::{f['Field_Name']}"] = Noul(
                 instructions=f"Has the employee already stated this information anywhere in `issue`: "
                              f"{f['Help_Text']} (for example: {f['Options_or_Source']})?")
+            opts = f.get("_options") or []
+            if len(opts) >= 2:
+                # a question with buttons: which button does the message already answer? ("my emails are stuck in
+                # the outbox" was asked "what exactly is going wrong?" with "Emails stuck in the Outbox" offered)
+                crit = {f"o{i}": f"From what `issue` says, the answer is clearly: {o}" for i, o in enumerate(opts)}
+                crit["not_stated"] = "`issue` does not say which of these applies, or it is only a guess."
+                q[f"opt::{f['Field_Name']}"] = Choice(
+                    instructions=f"For the question '{f.get('_ask') or f['Help_Text']}', which answer has the "
+                                 f"employee already given in `issue`?", criteria=crit)
         if not q:
             return Grounding({}, {})
         resp = self._ask(state, q)
         kb = {k.split("::")[1]: v.noul for k, v in resp.nouls.items() if k.startswith("kb::")}
         fp = {k.split("::")[1]: v.noul for k, v in resp.nouls.items() if k.startswith("field::")}
-        return Grounding(kb, fp, raw={"model": resp.model, "answers": _dump(resp)})
+        fv = {}
+        for f in fields:
+            c = resp.choices.get(f"opt::{f['Field_Name']}") if hasattr(resp, "choices") else None
+            if c is not None and c.choice != "not_stated":
+                fv[f["Field_Name"]] = (f["_options"][int(c.choice[1:])], c.confidence)
+        return Grounding(kb, fp, raw={"model": resp.model, "answers": _dump(resp)}, field_values=fv)
 
     def wrap_up(self, instructions_given: str, reply: str) -> WrapUp:
         from typesafe_sdk import Choice, Noul

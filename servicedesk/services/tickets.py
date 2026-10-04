@@ -399,8 +399,9 @@ class TicketService:
         r = parse_ts(t["resolved_at"])
         return bool(r) and datetime.now(timezone.utc) - r <= timedelta(days=config.REOPEN_WINDOW_DAYS)
 
-    def reopen(self, tid: str, actor: str, text: str) -> dict:
-        """EXT-4 / dataset: ≤ 7 days after resolution, the same ticket comes back to a human."""
+    def reopen(self, tid: str, actor: str, text: str, add_message: bool = True) -> dict:
+        """EXT-4 / dataset: ≤ 7 days after resolution, the same ticket comes back to a human. `add_message`
+        False: the employee's words are already in the chat (they said it there), so don't post them twice."""
         t = self.get(tid)
         if t["status"] not in ("RESOLVED_PENDING_CONFIRMATION", "RESOLVED") or not self.within_reopen_window(t):
             raise IllegalTransition("Reopen is only possible within 7 days of resolution")
@@ -414,7 +415,7 @@ class TicketService:
                 self.notify.notify(prev_owner, tid, f"{tid} was reopened by the employee.")
         # the fix didn't hold: the next owner works the checklist again (ticks are un-set, never deleted)
         self.store.execute("UPDATE checklists SET done_by=NULL, done_at=NULL WHERE ticket_id=?", (tid,))
-        if t["session_id"]:
+        if t["session_id"] and add_message:
             self.store.add_message(t["session_id"], "user", text, ticket_id=tid, author=actor)
         t = self.escalate(tid, f"Reopened by employee: {text[:120]}", None, actor=actor)
         self._set_session_stage(t, "ESCALATED")
