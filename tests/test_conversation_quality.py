@@ -609,3 +609,15 @@ def test_a_new_phone_said_plainly_is_never_asked_again():
         assert plainly.search(m), m
     for m in ("I'm not getting the sign-in approval on my phone", "my phone is new to me? no, the app is slow"):
         assert not plainly.search(m) or "new to" in m, m
+
+
+def test_after_two_failed_fixes_the_employee_hears_what_happens_next():
+    """4 Oct (Wi-Fi): after both fixes failed the bot only said 'this needs a specialist'. Every article whose two
+    fixes are the employee's says what the team will do next and how to keep working meanwhile."""
+    import json
+    from pathlib import Path
+    drafts = json.loads((Path(__file__).parent.parent / "servicedesk" / "content" / "kb_employee_drafts.json")
+                        .read_text(encoding="utf-8"))
+    for kb_id, a in drafts.items():
+        if isinstance(a, dict) and (a.get("attempt2") or {}).get("who") == "you":
+            assert "What happens next" in (a.get("handoff_message") or ""), kb_id

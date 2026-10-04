@@ -27,6 +27,7 @@
     "handoff_message": "**What happens next:** Security will review the recent sign-in attempts on your account and contact you shortly, usually within the hour. Please don't try another reset in the meantime. If you get a sign-in approval request on your phone that you didn't start, **deny it** and tell them."
   },
   "KB-005": {
+    "handoff_message": "**What happens next:** the Network Remote Access team will check your VPN account and the VPN server logs for your connection attempts, and may connect to your laptop remotely to look at the VPN app. **Meanwhile:** Outlook on the web, Teams and OneDrive work without the VPN, so you can keep working on those.",
     "title": "VPN won't connect",
     "summary": "Sorry you can't get onto the VPN. Most of the time the VPN app is holding on to an old, half-closed connection, and a clean restart of the app fixes it.",
     "attempt1": {"who": "you", "intro": "Let's give the VPN app a clean restart:", "steps": [
@@ -44,6 +45,7 @@
       "why": "A damaged connection profile is the next most common cause, and reinstalling it replaces it cleanly. The restart clears Windows' network settings (the same effect as a network reset)."}
   },
   "KB-006": {
+    "handoff_message": "**What happens next:** the Network Remote Access team will check the certificate on your laptop and issue a new one if needed, usually with a short remote session. **Meanwhile:** please don't accept or click past a certificate warning: that's the check that keeps the connection safe.",
     "title": "VPN certificate or trust error",
     "summary": "A certificate or 'untrusted server' error means your laptop can't confirm the VPN is genuine right now. The usual causes are an expired certificate on your laptop or the laptop's date and time being wrong.",
     "attempt1": {"who": "you", "intro": "First check the clock, then get a fresh certificate:", "steps": [
@@ -58,6 +60,7 @@
       "why": "An old certificate left behind can be picked instead of the new one, and a repair puts the app's own files back in order."}
   },
   "KB-007": {
+    "handoff_message": "**What happens next:** the Network Remote Access team will look at the VPN logs for when it dropped and check your VPN settings. It helps if you tell them roughly when it drops and which network you were on. **Meanwhile:** save your work often, and reconnect straight away if it drops.",
     "title": "VPN keeps dropping",
     "summary": "A VPN that keeps disconnecting is usually caused by an out-of-date VPN app, the laptop going to sleep, or a weak or busy network.",
     "attempt1": {"who": "you", "intro": "Two changes fix most dropouts:", "steps": [
@@ -73,6 +76,7 @@
       "why": "If it only drops on one network, the problem is that network (often home router settings or busy hotel Wi-Fi), not your laptop, and that tells the team exactly where to look."}
   },
   "KB-008": {
+    "handoff_message": "**What happens next:** the Network Remote Access team will check your VPN access and help you set the app up, usually in a short remote session. **Meanwhile:** Outlook on the web, Teams and OneDrive work without the VPN.",
     "title": "Set up the VPN for the first time",
     "summary": "Setting up the VPN takes about ten minutes. You'll need to be signed in to your laptop, and have your authenticator app on your phone for the first connection.",
     "attempt1": {"who": "you", "intro": "Here's how to set it up:", "steps": [
@@ -100,6 +104,7 @@
     "attempt2": {"who": "it", "note": "It isn't available to you in the Company Portal yet, so the Software Asset team will check it's approved for your role and assign a licence, usually **within a working day**. It then appears in the Company Portal, ready to install. If no licence is free, they'll move one from someone who no longer uses it or raise a purchase request, and tell you the expected date."}
   },
   "KB-010": {
+    "handoff_message": "**What happens next:** the Software Asset team will check why the install isn't completing (often a blocked update or a full disk) and install it for you remotely. **Meanwhile:** many apps have a web version you can use, such as Office on the web.",
     "title": "Install software from the Company Portal",
     "summary": "Most approved software installs itself from the Company Portal in a few minutes, with no admin rights needed.",
     "attempt1": {"who": "you", "intro": "Here's how:", "steps": [
@@ -176,6 +181,7 @@
     "handoff_message": "**What happens next:** Identity Security will call you on your registered work number to confirm it's you, then clear your old phone's registration and stay on the line while you set up the authenticator app on the new one. Have your laptop and the new phone with you."
   },
   "KB-017": {
+    "handoff_message": "**What happens next:** someone from Identity Security will confirm it's you and reset your sign-in method, so you can set up the authenticator again from scratch. **Meanwhile:** please don't approve any sign-in request you didn't start yourself.",
     "title": "Sign-in approval not showing up",
     "summary": "When the sign-in approval doesn't pop up, it's usually waiting inside the authenticator app, blocked by your phone's notification settings, or your phone's clock is slightly off.",
     "attempt1": {"who": "you", "intro": "Try this:", "steps": [
@@ -231,6 +237,7 @@
     "handoff_message": "**What happens next:** I've raised an approval request with the application owner, your manager and Security. They'll check what you need it for and may grant it for a limited time only. You'll be notified of the decision, usually within **2–3 working days**. If you only need one task done, the team may be able to do it for you sooner."
   },
   "KB-022": {
+    "handoff_message": "**What happens next:** the Network Operations team will check the office Wi-Fi where you are and your laptop's network connection on their side. **Meanwhile:** a network cable at your desk, or your phone's hotspot, will get you working.",
     "title": "No internet on the office Wi-Fi",
     "summary": "When the office Wi-Fi shows connected but nothing loads, the saved connection on your laptop has usually gone stale, and reconnecting from scratch fixes it.",
     "attempt1": {"who": "you", "intro": "Let's reconnect to the Wi-Fi from scratch:", "steps": [
@@ -266,6 +273,7 @@
     "handoff_message": "**Right now:** treat that password as known to someone else. Don't use it anywhere, and if you use the same password for anything else, change it there too. If you get a sign-in approval on your phone that you didn't start, **deny it**.\n\n**What happens next:** Security will contact you very soon to confirm it's you, reset your password and sign-in approvals, and check your account for any unusual activity."
   },
   "KB-026": {
+    "handoff_message": "**What happens next:** the print support team will check the printer and the print server, and visit it if it needs hands-on attention. **Meanwhile:** you can print to another printer nearby: it will show in your printer list.",
     "title": "Printing is stuck",
     "summary": "When documents sit in the queue and nothing prints, one stuck job is usually blocking everything behind it.",
     "attempt1": {"who": "you", "intro": "Let's clear the queue:", "steps": [
@@ -282,6 +290,7 @@
       "why": "Reinstalling puts a fresh driver on your laptop, which fixes printing that fails even with an empty queue."}
   },
   "KB-027": {
+    "handoff_message": "**What happens next:** the print support team will check the printer's network connection and the print server, and visit it if needed. **Meanwhile:** you can print to another printer nearby.",
     "title": "Printer shows as offline",
     "summary": "A printer that shows as offline is often working fine; your laptop's printing service has just lost track of it.",
     "attempt1": {"who": "you", "intro": "Try this:", "steps": [
@@ -297,6 +306,7 @@
       "why": "An old or damaged driver can make a working printer look offline."}
   },
   "KB-028": {
+    "handoff_message": "**What happens next:** the Collaboration Support team will check your audio and video settings with you, usually in a short remote session. **Meanwhile:** you can join meetings from the browser, or dial in by phone using the number in the invitation.",
     "title": "No sound or video in meetings",
     "summary": "When others can't hear or see you (or you can't hear them), the usual causes are Windows blocking the microphone or camera, or the meeting app using the wrong device.",
     "attempt1": {"who": "you", "intro": "Let's check the permissions and devices:", "steps": [
@@ -312,6 +322,7 @@
       "why": "Old cached settings in the app can keep it pointing at the wrong device, and a fresh install clears them."}
   },
   "KB-029": {
+    "handoff_message": "**What happens next:** the Collaboration Support team will check your account and the meeting app on your laptop. **Meanwhile:** joining from the browser, or dialling in with the number in the invitation, gets you into meetings.",
     "title": "Can't join a meeting",
     "summary": "If the meeting app won't let you in, joining from your web browser usually works straight away, so you don't miss the meeting.",
     "attempt1": {"who": "you", "intro": "Join from your browser:", "steps": [
@@ -327,6 +338,7 @@
       "why": "A fresh install replaces damaged app files and cached sign-in details that stop it joining."}
   },
   "KB-030": {
+    "handoff_message": "**What happens next:** the Mobile Device Management team will check your phone's enrolment and fix it on their side, or walk you through setting it up again. Your personal data isn't touched. **Meanwhile:** Outlook and Teams work in your laptop's browser.",
     "title": "Work phone setup or compliance problem",
     "summary": "When your phone says it isn't compliant, or work apps like Outlook or Teams stop working on it, the work profile usually just needs to re-check and sync.",
     "attempt1": {"who": "you", "intro": "Let's sync it:", "steps": [

@@ -1671,8 +1671,13 @@ class ConversationService:
         if outcome == "not_fixed":
             if st.get("attempt", 0) < config.MAX_ATTEMPTS:
                 return self._attempt(st["attempt"] + 1)
+            # what the team will do and how to keep working meanwhile (4 Oct: Wi-Fi only said "this needs a
+            # specialist"), from the approved article; the plain line is the fallback for an article without one
+            nxt = (self.kbs.live(st.get("kb_id") or "") or {}).get("handoff_message")
             return self._escalate(f"{config.MAX_ATTEMPTS} supported attempts failed.",
-                                  "Thanks for trying both fixes. Since neither worked, this needs a specialist to look at it directly.")
+                                  f"Thanks for trying both fixes. Since neither worked, I'm passing it on.\n\n{nxt}"
+                                  if nxt else "Thanks for trying both fixes. Since neither worked, this needs a "
+                                              "specialist to look at it directly.")
         if outcome == "needs_help":
             st["help_resends"] = st.get("help_resends", 0) + 1
             if st["help_resends"] > 1:
