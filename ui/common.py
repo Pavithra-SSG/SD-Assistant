@@ -123,6 +123,10 @@ def _p1_dialog(a: dict) -> None:
         st.caption(f"Re-alert #{a['realert_count']}: nobody has acknowledged this yet.")
     if a.get("escalation_reason") and a["escalation_reason"].startswith("unacknowledged"):
         st.warning(f"Escalated to supervisor: {a['escalation_reason']}")
+    others = [o for o in st.session_state.get("p1_fresh", []) if o["alert_id"] != a["alert_id"]]
+    if others:
+        st.caption(f"{len(others)} more P1 waiting: {', '.join(o['ticket_id'] for o in others[:5])}. They're in the "
+                   "red banner and your queue; **Later** snoozes them all until their next re-alert.")
     c1, c2, c3 = st.columns(3)
     if c1.button("Acknowledge", type="primary", width="stretch"):
         client.post(f"/alerts/{a['alert_id']}/ack")
@@ -137,7 +141,10 @@ def _p1_dialog(a: dict) -> None:
         st.session_state.p1_modal = None
         open_ticket(a["ticket_id"])
     if c3.button("Later", width="stretch"):
-        st.session_state.p1_seen[a["alert_id"]] = a["realert_count"]
+        # every P1 waiting right now, not just this one: with three P1s, Later showed the next dialog straight
+        # away, so a supervisor had to click through them all (4 Oct)
+        for o in [a, *st.session_state.get("p1_fresh", [])]:
+            st.session_state.p1_seen[o["alert_id"]] = o["realert_count"]
         st.session_state.p1_modal = None
         st.rerun()
 
@@ -175,8 +182,9 @@ def alert_center() -> None:
         elif a["event"] == "sla_risk" and key not in ss.toasted:
             ss.toasted.add(key)
             st.toast(a["text"], icon="⏱️")
+    fresh = [a for a in p1 if ss.p1_seen.get(a["alert_id"], -1) < a["realert_count"]]
+    ss.p1_fresh = fresh
     if not ss.get("p1_modal"):
-        fresh = [a for a in p1 if ss.p1_seen.get(a["alert_id"], -1) < a["realert_count"]]
         if fresh:
             ss.p1_modal = fresh[0]["alert_id"]
     current = next((a for a in p1 if a["alert_id"] == ss.get("p1_modal")), None)

@@ -292,7 +292,10 @@ for m in d["messages"]:
     who = {"user": "🧑‍💻 Employee", "bot": "🤖 Bot", "agent": f"👤 {m['meta'].get('agent', 'Agent')}",
            "system": "ℹ️ System"}[m["role"]]
     kind = "Work notes" if m["visibility"] == "internal" else "Conversation"
-    items.append((m["created_at"], m["id"] * 2, kind, who, m["text"], m["visibility"] == "internal"))
+    # within one second: the employee's message, then the bot's steps, then its reply (ids from two tables
+    # don't order each other, 4 Oct: "Install it on my laptop" showed after the steps it caused)
+    items.append((m["created_at"], 0 if m["role"] == "user" else 2, m["id"], kind, who, m["text"],
+                  m["visibility"] == "internal"))
 bot_steps = {"Intent router", "Ticket triage", "Safety gate", "Safety", "Retriever", "Understand", "Solve", "Tool",
              "Wrap up", "Escalation", "Confirm classification", "Fallback", "Category check", "Duplicate guard",
              "Incident", "Form", "Screenshot", "Language"}
@@ -303,11 +306,11 @@ for e in d["events"]:
     icon = "🤖 Bot" if kind == "Bot decisions" else ("🔔 Alert" if "Alert" in e["event_type"] else "🔁 Sys")
     if e.get("actor_name"):
         icon = f"👤 {e['actor_name']}"
-    items.append((e["created_at"], e["id"] * 2 + 1, kind, icon,
+    items.append((e["created_at"], 1, e["id"], kind, icon,
                   f"**{e['event_type']}** {e['payload'].get('detail', '')}", False))
-items.sort(key=lambda x: (x[0], x[1]))
+items.sort(key=lambda x: (x[0], x[1], x[2]))
 html = []
-for ts, _, kind, who, text, internal in items:
+for ts, _, _id, kind, who, text, internal in items:
     if flt != "Everything" and kind != flt:
         continue
     # escape first: message text comes from employees and must never be rendered as HTML

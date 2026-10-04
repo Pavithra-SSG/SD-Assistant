@@ -158,6 +158,12 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def now_ms() -> str:
+    """Messages and timeline events: to the millisecond, so a ticket's activity reads in the order it happened
+    (several steps happen within one second)."""
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+
 def parse_ts(ts: str | None) -> datetime | None:
     return datetime.fromisoformat(ts) if ts else None
 
@@ -392,10 +398,10 @@ class Store:
 
     # ---- messages
     def add_message(self, session_id, role, text, ticket_id=None, meta=None, visibility="customer",
-                    author=None) -> int:
+                    author=None, created_at=None) -> int:
         sql = ("INSERT INTO messages (session_id,ticket_id,role,text,meta_json,created_at,visibility,author) "
                "VALUES (?,?,?,?,?,?,?,?)")
-        args = (session_id, ticket_id, role, text, json.dumps(meta or {}), now(), visibility, author)
+        args = (session_id, ticket_id, role, text, json.dumps(meta or {}), created_at or now_ms(), visibility, author)
         with self._conn() as c:
             if self.pg:
                 return c.execute(sql + " RETURNING id", args).fetchone()[0]
@@ -448,7 +454,7 @@ class Store:
 
     # ---- trace, audit + corrections (append-only)
     def log_event(self, event_type, payload, ticket_id=None, session_id=None, actor=None, conn=None) -> None:
-        args = (ticket_id, session_id, event_type, json.dumps(payload, default=str), now(), actor)
+        args = (ticket_id, session_id, event_type, json.dumps(payload, default=str), now_ms(), actor)
         sql = ("INSERT INTO events (ticket_id,session_id,event_type,payload_json,created_at,actor) "
                "VALUES (?,?,?,?,?,?)")
         if conn is not None:
