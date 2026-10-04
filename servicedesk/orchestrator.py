@@ -1227,11 +1227,13 @@ class ConversationService:
         if cat == "CAT-05" and a.get("device_change") == "Yes" and cur != "KB-016":
             new, why = "KB-016", "phone changed or reset → re-enrol the authenticator"
         elif st.get("asked_on") == st["ticket_id"] and cat not in ("CAT-01", "CAT-05", "CAT-09"):
-            # we asked questions: read the answers, in every category (sign-in and security questions are about
-            # identity, not the fix). 4 Oct: "I need an application" → Application Access → "ollama", "Editor":
-            # that's software to install (a non-standard one), not access to a business app like Jira.
-            cands = [x for x in self.k.kb.values()
-                     if x.category_id == cat or x.category_id not in ("CAT-01", "CAT-05", "CAT-09")]
+            # we asked questions: read the answers (sign-in and security questions are about identity, not the fix).
+            # Only this category and the ones triage thought plausible: scoring all 31 articles at once moved
+            # "my laptop gets hot" + "Battery or charging problem" to the missing-email article (4 Oct). Software
+            # asked for as "access" is moved by the catalogue check instead, which doesn't guess.
+            plausible = {cat} | {c for c, p in st.get("triage", {}).get("categories", []) if p >= 0.15
+                                 and c not in (OTHER_CATEGORY, "CAT-01", "CAT-05", "CAT-09")}
+            cands = self.k.kb_for_categories(sorted(plausible))
             g = self.brain.ground(st["issue_context"], cands, [])
             self._save_kb_scores(g.kb_scores)
             best, p = max(g.kb_scores.items(), key=lambda x: x[1], default=(cur, 0))

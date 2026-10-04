@@ -456,6 +456,35 @@ def test_unknown_name_asked_as_access_is_checked_against_the_catalogue(h):
     assert t["category_id"] == "CAT-03"
 
 
+def test_answers_never_move_a_hardware_problem_to_an_unrelated_article(h):
+    """Regression (4 Oct): 'my laptop gets hot soon' → 'Battery or charging problem' → 'floor' gave the
+    missing-emails steps: the re-check after the answers scored all 31 articles and picked email."""
+    from dataclasses import replace
+    brain = h.api.conv.brain
+    real_triage, real_ground = brain.triage, brain.ground
+    seen = []
+
+    def ground(issue, cands, fields):
+        seen.append({a.kb_id for a in cands})
+        g = real_ground(issue, cands, fields)
+        if any(a.kb_id == "KB-019" for a in cands):  # the model's mistake, if email were ever on offer
+            g = replace(g, kb_scores={**g.kb_scores, "KB-019": 0.95})
+        return g
+    try:
+        brain.triage = lambda m, hist: replace(real_triage(m, hist), intent="report_it_problem",
+                                               categories=[("CAT-04", .9), ("OTHER", .1)], category_confidence=.9)
+        brain.ground = ground
+        emp = h.fresh_employee()
+        sid = h.new_session(emp)
+        r = h.chat(emp, sid, "my laptop gets hot soon")
+        r = _answer_until(h, emp, sid, r, lambda x: x.get("attempt") or "passed this" in (x["reply"] or ""),
+                          ["Battery or charging problem", "floor"])
+    finally:
+        brain.triage, brain.ground = real_triage, real_ground
+    assert all("KB-019" not in s for s in seen)
+    assert h.ticket(r["ticket_id"])["category_id"] == "CAT-04" and "Outlook" not in (r["reply"] or "")
+
+
 def test_overdue_ticket_says_overdue(h):
     emp = h.fresh_employee()
     sid = h.new_session(emp)

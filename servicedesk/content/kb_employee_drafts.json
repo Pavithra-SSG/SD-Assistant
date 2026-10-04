@@ -138,6 +138,7 @@
       "Unplug and firmly reconnect every cable: power, dock, monitor and USB. If you have a spare cable or charger, try it.",
       "For a screen problem, press **Windows + P** and choose **Duplicate** or **Extend**; also try the laptop with the dock unplugged.",
       "For overheating, put the laptop on a hard, flat surface (not a bed or lap) so the air vents are clear, and close apps you aren't using.",
+      "**Stop and tell me straight away** if the laptop is too hot to hold, the case or keyboard is bulging, or you smell burning: shut it down and unplug it. That can be a failing battery.",
       "Please don't open the device or remove any covers."],
       "why": "A restart clears a stuck state, and loose or faulty cables cause a large share of 'hardware' faults. If none of this helps, it's a real fault for the hardware team."},
     "attempt2": {"who": "it", "note": "This needs a hands-on check, so the **hardware team** will contact you to arrange a repair, a swap or a visit to the IT desk, and confirm the timing with you. They already have your device details and what you've tried. Save your work regularly in case it gets worse."},
