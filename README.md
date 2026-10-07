@@ -255,6 +255,7 @@ push ──► CI: tests on SQLite + Postgres, Docker build
 - **Install, backups, monitoring and turning on automatic deployment:** [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Before real users:** [docs/GO-LIVE.md](docs/GO-LIVE.md) (approve articles, e-mail/Teams, alerts, key rotation).
 - **Rollback:** Actions → CD → *Run workflow* with an earlier commit SHA.
+- **Plain-words guides:** [docs/SD-Assistant_Explained.pdf](docs/SD-Assistant_Explained.pdf) (the employee's side, end to end) and [docs/SD-Assistant_IT_Side.pdf](docs/SD-Assistant_IT_Side.pdf) (agents and the supervisor); hands-on test script: [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 ---
 
