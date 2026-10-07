@@ -351,6 +351,20 @@ class ConversationService:
                 other = None
             if other:  # never act on a screenshot of a different problem without asking
                 return self._finish(self._ask_about_screenshot(other, typed))
+        if atts and self._screenshot_error and typed.strip() and not st.get("ticket_id") \
+                and st.get("stage", "IDLE") in ("IDLE", "ENDED"):
+            try:
+                other = self._screenshot_vs_typed(typed)
+            except BrainError:
+                other = None
+            if other:  # 7 Oct: a wrong screenshot was read as part of the problem, with no word to the employee
+                st["shot_pending"] = {"prev_stage": "IDLE", "typed": typed, "category": other,
+                                      "error": self._screenshot_error, "first": True}
+                st["stage"] = "CONFIRM_SCREENSHOT"
+                return self._finish(Reply(
+                    f"Thanks for the screenshot. It shows _\"{self._screenshot_error[:140]}\"_, which looks like a "
+                    f"**{self.k.name(other)}** problem, but what you typed sounds like something else.\n\n"
+                    "Is it the right screenshot?", quick_replies=[WRONG_SHOT, SEPARATE_PROBLEM]))
         if atts:  # what the screenshot says becomes part of what Jev reads; the note tells the employee
             context, note = summary_for_bot(atts)
             if note:
@@ -375,6 +389,8 @@ class ConversationService:
                 reply = self._to_human_owner(message)  # a human owns the conversation: the bot stays silent
             elif stage == "CONFIRM_SCREENSHOT":
                 reply = self._on_confirm_screenshot(message)
+            elif stage == "CONFIRM_FIX":
+                reply = self._on_confirm_fix(message)
             elif stage == "CONFIRM_CATEGORY":
                 reply = self._on_confirm_category(message)
             elif stage == "DESCRIBE_OTHER":
@@ -474,6 +490,19 @@ class ConversationService:
         p = st.pop("shot_pending", {})
         st["stage"] = p.get("prev_stage", "IDLE")
         tid = st.get("ticket_id")
+        if p.get("first"):  # no ticket yet: go with what they typed, without the screenshot
+            st["stage"] = "IDLE"
+            if message == WRONG_SHOT:
+                lead = "No problem, I'll go by what you typed. Attach the right screenshot any time."
+            elif message == SEPARATE_PROBLEM:
+                lead = ("Okay, let's sort out what you typed first. When we're done, tell me about the problem in "
+                        "the screenshot and it'll get its own ticket.")
+            else:
+                return self._route(message)
+            self._t("Screenshot check", f"employee: {message} → going by the typed message only")
+            reply = self._triage(p.get("typed") or "")
+            reply.text = f"{lead}\n\n{reply.text or ''}".strip()
+            return reply
         if message == SEPARATE_PROBLEM:
             st["stage"] = "IDLE"
             self._t("Screenshot check", "employee: separate problem → new triage")
@@ -490,6 +519,70 @@ class ConversationService:
                 return self._route(p["typed"])
             return self._reprompt("Okay, let's carry on.")
         return self._route(message)  # they answered in words instead: handle it as a normal reply
+
+    def _on_confirm_fix(self, message: str) -> Reply:
+        """An engineer resolved the ticket and the chat asked "is it working?": yes closes it, no sends it back to
+        the team. Anything else is a new message (often a new problem): handled as usual."""
+        st = self._st
+        tid = st.get("ticket_id")
+        t = self.store.get_ticket(tid) if tid else None
+        if not t or t["status"] != "RESOLVED_PENDING_CONFIRMATION":  # already confirmed (My tickets, or 3 days)
+            st["stage"] = "IDLE"
+            return self._route(message)
+        no = message == NOT_FIXED or bool(re.match(r"(?i)\s*(no|nope|not yet|nah)\b", message)) or bool(re.search(
+            r"(?i)\b(not working|still|again|isn'?t|doesn'?t|didn'?t|won'?t|can'?t|same (problem|issue|error))\b",
+            message))
+        yes = message == FIXED or is_thanks(message) or bool(re.match(
+            r"(?i)\s*(yes|yep|yeah|yup|ok|okay|works|it works|it'?s working|working( now)?|fixed|all good|sorted)\b",
+            message))
+        if no:
+            self.tickets.reopen(tid, self._employee["Employee_ID"], message, add_message=False)
+            st["stage"] = "ESCALATED"
+            self._t("Confirmation", f"employee: still not working → {tid} reopened")
+            return Reply(f"Sorry it's still not working. I've reopened **{tid}** and sent it straight back to the "
+                         f"**{t['queue']}** team with everything so far. Their reply will appear right here.")
+        if yes:
+            self.tickets.confirm(tid, self._employee["Employee_ID"])
+            st["stage"] = "ENDED"
+            self._t("Confirmation", f"employee confirmed the fix → {tid} resolved")
+            return Reply(f"Great, glad it's working! 🎉 I've closed **{tid}** as resolved. If it comes back within "
+                         "7 days, just tell me here.\n\nYou can rate how we did under **My tickets**.",
+                         meta={"ended": True})
+        st["stage"] = "IDLE"
+        return self._route(message)
+
+    def _screenshot_vs_typed(self, typed: str) -> str | None:
+        """First message: the screenshot's category when it clearly shows a different problem from what they
+        typed (they said VPN, the screenshot is a printer error). None when it fits, or we can't tell."""
+        said = self.brain.triage(typed, [])
+        shot = self.brain.triage(self._screenshot_error, [])
+        if not said.categories or not shot.categories:
+            return None
+        if self._risky(said.flags, "security_incident") or self._risky(shot.flags, "security_incident"):
+            return None  # a phishing screenshot can look like anything, and it's evidence
+        (said_cat, said_p), (shot_cat, shot_p) = said.categories[0], shot.categories[0]
+        self._t("Screenshot check", f"typed → {self.k.name(said_cat)} {_pct(said_p)}; screenshot → "
+                                    f"{self.k.name(shot_cat)} {_pct(shot_p)}")
+        if OTHER_CATEGORY in (said_cat, shot_cat) or said_cat == shot_cat:
+            return None
+        if said_p >= config.SCREENSHOT_MISMATCH_CONFIDENCE and shot_p >= config.SCREENSHOT_MISMATCH_CONFIDENCE \
+                and dict(shot.categories).get(said_cat, 0) < 0.2:
+            return shot_cat
+        return None
+
+    def screenshot_mismatch(self, category_id: str, error_line: str) -> str | None:
+        """Ticket form: the category the screenshot's error belongs to, when it clearly isn't the one chosen."""
+        try:
+            shot = self.brain.triage(error_line, [])
+        except BrainError:
+            return None
+        if not shot.categories:
+            return None
+        top, p = shot.categories[0]
+        if top not in (category_id, OTHER_CATEGORY) and p >= config.SCREENSHOT_MISMATCH_CONFIDENCE \
+                and dict(shot.categories).get(category_id, 0) < 0.2:
+            return top
+        return None
 
     def _reprompt(self, lead: str = "") -> Reply:
         """Ask again for whatever we were waiting for, with its buttons."""
@@ -1676,10 +1769,13 @@ class ConversationService:
         if outcome == "fixed":
             self._to("RESOLVED_PENDING_CONFIRMATION", "Success confirmed", resolution_code="Solved by bot",
                      resolution_notes=f"Fixed on attempt {st.get('attempt')} ({st.get('kb_id')})", resolved_at=now())
+            # they just told us it works: that IS the confirmation (7 Oct: "Resolved, please confirm" then asked
+            # them to confirm again under My tickets)
+            self.tickets.confirm(st["ticket_id"], self._employee["Employee_ID"])
             st["stage"] = "IDLE"
-            self._t("Wrap up", "resolved; summary saved")
-            return Reply(f"That's great news! 🎉 I've marked **{st['ticket_id']}** as fixed. If it comes back in "
-                         "the next 7 days, just tell me here or press **Reopen** in My tickets.")
+            self._t("Wrap up", "fixed, confirmed by the employee → resolved; summary saved")
+            return Reply(f"That's great news! 🎉 I've closed **{st['ticket_id']}** as resolved. If it comes back in "
+                         "the next 7 days, just tell me here and I'll reopen it.")
         if outcome == "not_fixed":
             if st.get("attempt", 0) < config.MAX_ATTEMPTS:
                 return self._attempt(st["attempt"] + 1)
@@ -1859,6 +1955,7 @@ class ConversationService:
                              session_id=sid, actor=employee_id)
         public = {k: v for k, v in review.items() if k not in ("raw", "kb_scores", "flags")}
         public["screenshot_note"] = form.get("screenshot_note")
+        public["screenshot_warning"] = form.get("screenshot_warning")
         public["warnings"] = self._form_warnings(flags, masked) + (
             ["The assistant is unavailable right now, so this ticket will go straight to a person."]
             if degraded else [])

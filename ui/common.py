@@ -61,7 +61,7 @@ div[data-testid="stMetricValue"] { font-variant-numeric:tabular-nums; }
 
 PRIO_COLOR = {"P1": "#C0362C", "P2": "#C9731C", "P3": "#2F7A86", "P4": "#6B7B86"}
 STATE_LABEL = {"ESCALATION_QUEUED": "Escalation queued", "HUMAN_ASSIGNED": "Assigned",
-               "HUMAN_IN_PROGRESS": "In progress", "RESOLVED_PENDING_CONFIRMATION": "Resolved, awaiting confirmation",
+               "HUMAN_IN_PROGRESS": "In progress", "RESOLVED_PENDING_CONFIRMATION": "Fixed, waiting for the employee",
                "WAITING_FOR_USER": "Waiting for user", "WAITING_FOR_VALIDATION_1": "Bot: awaiting check (1)",
                "WAITING_FOR_VALIDATION_2": "Bot: awaiting check (2)", "VERIFICATION_PENDING": "Verification pending",
                "COLLECTING_INFORMATION": "Bot: collecting info", "READY_FOR_RESOLUTION": "Ready for resolution",

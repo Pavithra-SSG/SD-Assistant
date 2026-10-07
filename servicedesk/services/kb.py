@@ -120,6 +120,7 @@ class KnowledgeService:
             st = latest.get(kb_id, {})
             up, down = (fb.get(kb_id) or {}).get("up") or 0, (fb.get(kb_id) or {}).get("down") or 0
             out.append({"kb_id": kb_id, "title": a.title, "category": self.k.name(a.category_id),
+                        "category_id": a.category_id, "team": self._team(a.category_id),
                         "handling": a.handling_mode, "live_version": st.get("approved"),
                         "draft_version": st.get("draft"), "helpful": up, "not_helpful": down,
                         "helpful_rate": round(up / (up + down), 3) if up + down else None})
@@ -185,6 +186,10 @@ class KnowledgeService:
         self._live_at = 0
         return self.version(version_id)
 
+    def _team(self, category_id: str | None) -> str | None:
+        """The team that owns a category (routing matrix); None for an unclear one."""
+        return (self.k.routing.get(category_id or "") or {}).get("Primary_Queue")
+
     # ================================================================ knowledge gaps
     def gaps(self, since: str) -> list[dict]:
         """Questions no article answered, grouped by category, most frequent first, with a few examples.
@@ -195,7 +200,8 @@ class KnowledgeService:
         for r in rows:
             g = groups.setdefault(r["category_id"] or "CAT-OTHER", {
                 "category_id": r["category_id"], "category": self.k.name(r["category_id"]) if r["category_id"] in
-                self.k.categories else "Unclear / other", "count": 0, "examples": [], "nearest": {}})
+                self.k.categories else "Unclear / other", "team": self._team(r["category_id"]), "count": 0,
+                "examples": [], "nearest": {}})
             g["count"] += 1
             if len(g["examples"]) < 5 and r["question"]:
                 g["examples"].append({"question": r["question"], "at": r["created_at"]})

@@ -55,6 +55,8 @@ def k_lifecycle() -> list[dict]:
 
 RESOLUTION_CODES = ["Solved by bot", "Solved by agent", "Workaround given", "Duplicate", "Not reproducible",
                     "Cancelled by user"]
+# the employee's two answers when an engineer says it's fixed (the same words as the bot's own "did that fix it?")
+FIX_YES, FIX_NO = "Yes, it's fixed", "No, still not working"
 AGENT_RESOLUTION_CODES = ["Solved by agent", "Workaround given", "Not reproducible"]
 ACCESS_SECURITY_CATS = ("CAT-01", "CAT-05", "CAT-07", "CAT-09")
 
@@ -98,7 +100,7 @@ def employee_label(t: dict, owner_name: str | None = None) -> str:
         return f"With {team} team"
     if s in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS"):
         return f"{owner_name or 'An engineer'} ({team}) is working on it"
-    return {"RESOLVED_PENDING_CONFIRMATION": "Resolved, please confirm", "RESOLVED": "Resolved",
+    return {"RESOLVED_PENDING_CONFIRMATION": "Fixed by IT: please check it works", "RESOLVED": "Resolved",
             "CLOSED": "Closed", "CANCELLED": "Cancelled"}.get(s, s)
 
 
@@ -242,7 +244,7 @@ class TicketService:
             return
         st = self.store.get_session(t["session_id"]) or {}
         st["stage"] = stage
-        if stage == "HUMAN":
+        if stage in ("HUMAN", "CONFIRM_FIX"):
             st["ticket_id"] = t["ticket_id"]
         self.store.save_session(t["session_id"], t["employee_id"], st)
 
@@ -386,13 +388,16 @@ class TicketService:
             raise ResolveBlocked(missing)
         t = self.transition(tid, "RESOLVED_PENDING_CONFIRMATION", user["user_id"], "Fix applied",
                             resolution_code=code, resolution_notes=notes, resolved_at=now())
-        self._set_session_stage(t, "IDLE")
+        # the employee closes it: the chat asks them, with two buttons (7 Oct: they had to find a separate
+        # "confirm" box under My tickets, and the desk saw "Resolved" before the employee had said so)
+        self._set_session_stage(t, "CONFIRM_FIX")
         if t["session_id"]:
-            self.store.add_message(t["session_id"], "system", f"✅ {tid} was resolved by {user['name']}. If it's working, "
-                                   "reply \"thanks\" (or tap **Confirm it's fixed** under **My tickets**). If it "
-                                   "comes back within 7 days, just describe it here.", ticket_id=tid, author=user["user_id"])
+            self.store.add_message(t["session_id"], "bot", f"✅ **{user['name']}** from IT has fixed **{tid}**.\n\n"
+                                   "**Is it working for you now?**", ticket_id=tid, author=user["user_id"],
+                                   meta={"quick_replies": [FIX_YES, FIX_NO]})
         if self.notify:
-            self.notify.notify(t["employee_id"], tid, f"{tid} was resolved by {user['name']}. Please confirm.")
+            self.notify.notify(t["employee_id"], tid, f"{user['name']} has fixed {tid}. Is it working? Tell us in the chat or "
+                                                         "under My tickets.")
         return t
 
     def confirm(self, tid: str, actor: str) -> dict:

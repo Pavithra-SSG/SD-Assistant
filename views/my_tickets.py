@@ -52,10 +52,18 @@ with right:
         st.info(f"Linked to incident {t['incident_parent']}: many people are affected, and the team is working on it.")
     st.markdown(f"**Short description:** {t['summary']}")
 
+    if t["can_confirm"]:  # the same two answers the chat offers: the employee closes it, or sends it back
+        st.info("IT says this is fixed. **Is it working for you now?**")
+        y, n_, _ = st.columns([1, 1, 1])
+        if y.button("Yes, it's fixed", type="primary", width="stretch"):
+            client.post(f"/me/tickets/{t['ticket_id']}/confirm")
+            st.toast("Thanks! Closed as resolved.")
+            st.rerun()
+        if n_.button("No, still not working", width="stretch"):
+            client.post(f"/me/tickets/{t['ticket_id']}/reopen", {"text": "No, still not working"})
+            st.toast("Reopened and sent back to the team.")
+            st.rerun()
     b = st.columns(3)
-    if t["can_confirm"] and b[0].button("Confirm it's fixed", type="primary", width="stretch"):
-        client.post(f"/me/tickets/{t['ticket_id']}/confirm")
-        st.rerun()
     if t["bot_active"] and t["session_id"] and b[1].button("Continue in chat", width="stretch"):
         ss.chat_sid = t["session_id"]
         st.switch_page("views/employee_chat.py")
@@ -96,8 +104,7 @@ with right:
             st.caption(local(m["created_at"]))
 
     if t["can_reopen"]:
-        st.caption(("Working now? Tap **Confirm it's fixed** above, or reply \"thanks\". " if t["can_confirm"] else "")
-                   + "Came back? Describe it here and the ticket reopens (up to 7 days after it was resolved).")
+        st.caption("Came back? Describe it here and the ticket reopens (up to 7 days after it was resolved).")
         label = "Describe what's happening again"
     elif t["status"] in ("CLOSED", "RESOLVED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION"):
         st.caption("This ticket is past its reopen window. Replying opens a new ticket linked to this one.")

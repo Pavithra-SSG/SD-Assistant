@@ -235,17 +235,62 @@ class AnalyticsService:
                 "restricted_actions": restricted, "secret_leakage": leaks}
 
     # ================================================================ bot answers log
-    def bot_answers(self, kb_id: str | None = None, category_id: str | None = None,
-                    date_from: str | None = None, date_to: str | None = None) -> list[dict]:
-        rows = self.store.query("SELECT * FROM bot_answers ORDER BY id DESC LIMIT 1000")
-        out = []
-        for r in rows:
-            if kb_id and r["kb_id"] != kb_id or category_id and r["category_id"] != category_id:
+    def answer_team(self, ticket: dict | None, category_id: str | None) -> str | None:
+        """The team an answer belongs to: its ticket's queue, or (a how-to answer with no ticket) the team that
+        owns the category."""
+        if ticket:
+            return ticket["queue"]
+        return (self.k.routing.get(category_id or "") or {}).get("Primary_Queue")
+
+    def bot_answers(self, f: dict | None = None) -> dict:
+        """Every set of fix steps the bot sent, newest first, and the success rate per article for the SAME rows,
+        so the numbers always match the list. `f` (all optional): queues (the teams to show; an agent's own
+        queues are forced by the API), agent (ticket owner), categories, kb_id, outcome, date_from, date_to,
+        search (ticket number, article or words in the steps). 7 Oct: every agent saw every team's answers."""
+        f = f or {}
+        tickets = {t["ticket_id"]: t for t in self.store.query("SELECT ticket_id, queue, owner FROM tickets")}
+        names = {u["user_id"]: u["name"] for u in self.store.query("SELECT user_id, name FROM users")}
+        search = (f.get("search") or "").strip().lower()
+        rows = []
+        for r in self.store.query("SELECT * FROM bot_answers ORDER BY id DESC"):
+            t = tickets.get(r["ticket_id"] or "")
+            team = self.answer_team(t, r["category_id"])
+            owner = t["owner"] if t else None
+            outcome = r["outcome"] or "pending"
+            kb = self.k.kb.get(r["kb_id"])
+            title = kb.title if kb else r["kb_id"]
+            if f.get("queues") is not None and team not in f["queues"]:
                 continue
-            if date_from and r["created_at"][:10] < date_from or date_to and r["created_at"][:10] > date_to:
+            if f.get("agent") and owner != f["agent"]:
                 continue
-            out.append({**r, "title": self.k.kb[r["kb_id"]].title, "category": self.k.name(r["category_id"])})
-        return out
+            if f.get("categories") and r["category_id"] not in f["categories"]:
+                continue
+            if f.get("kb_id") and r["kb_id"] != f["kb_id"]:
+                continue
+            if f.get("outcome") and outcome != f["outcome"]:
+                continue
+            day = (r["created_at"] or "")[:10]
+            if f.get("date_from") and day < f["date_from"] or f.get("date_to") and day > f["date_to"]:
+                continue
+            if search and search not in " ".join((r["ticket_id"] or "", r["kb_id"] or "", title,
+                                                  r["steps_text"] or "")).lower():
+                continue
+            rows.append({**r, "outcome": outcome, "title": title, "category": self.k.name(r["category_id"]),
+                         "team": team, "agent_id": owner, "agent": names.get(owner) if owner else None})
+        agg = defaultdict(lambda: {"sent": 0, "fixed": 0, "not_fixed": 0, "escalated": 0})
+        for r in rows:  # success: fix steps sent inside a ticket (attempt 1 or 2); how-to answers have no outcome
+            if r["ticket_id"] and (r["attempt"] or 0) > 0:
+                a = agg[r["kb_id"]]
+                a["sent"] += 1
+                if r["outcome"] in a:
+                    a[r["outcome"]] += 1
+        success = sorted(({"kb_id": kb, "title": self.k.kb[kb].title if kb in self.k.kb else kb,
+                           "sent": a["sent"], "fixed": a["fixed"], "not_fixed": a["not_fixed"],
+                           "escalated": a["escalated"],
+                           "success_rate": round(a["fixed"] / a["sent"], 3) if a["sent"] else None}
+                          for kb, a in agg.items()),
+                         key=lambda r: (r["success_rate"] is None, r["success_rate"] or 0))
+        return {"answers": rows[:1000], "success": success, "total": len(rows)}
 
     # ================================================================ agent performance (spec §8.5)
     def performance(self, date_from: str | None = None, date_to: str | None = None,

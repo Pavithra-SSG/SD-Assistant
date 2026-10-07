@@ -32,6 +32,35 @@ if new_chat:
     ss.chat_sid = fresh_chat()
     st.rerun()
 
+
+def open_conversation(t: dict) -> None:
+    if t["session_id"]:
+        ss.chat_sid = t["session_id"]
+    else:  # logged by phone: there's no chat, so the ticket page has the thread and the reply box
+        ss.my_open = t["ticket_id"]
+        st.switch_page("views/my_tickets.py")
+
+
+# Tickets with news from IT in ANOTHER conversation: after signing out and back in, the chat starts clean, so
+# without this the employee never learnt that an engineer had joined or fixed it (7 Oct)
+news = []
+for t in client.get("/me/tickets"):
+    if t["session_id"] == ss.chat_sid:
+        continue
+    if t["status"] in ("HUMAN_ASSIGNED", "HUMAN_IN_PROGRESS"):
+        news.append((t, f"👤 **{t['owner'] or 'An engineer'}** from IT is working on **{t['ticket_id']}** "
+                        f"({t['summary'][:60]})."))
+    elif t["status"] == "RESOLVED_PENDING_CONFIRMATION":
+        news.append((t, f"✅ **{t['ticket_id']}** ({t['summary'][:60]}) has been fixed. Is it working for you?"))
+    elif t["status"] == "ESCALATION_QUEUED":
+        news.append((t, f"⏳ **{t['ticket_id']}** ({t['summary'][:60]}) is waiting for the **{t['queue']}** team."))
+for t, text in news[:3]:
+    with st.container(border=True, horizontal=True, vertical_alignment="center"):
+        st.markdown(text)
+        if st.button("Open that conversation", key=f"news-{t['ticket_id']}", width="content"):
+            open_conversation(t)
+            st.rerun()
+
 # past conversations stay one click away; never-used ones are left out of the list
 all_sids = [s["session_id"] for s in sessions if s.get("n_messages") or s["session_id"] == ss.chat_sid]
 if ss.chat_sid not in all_sids:

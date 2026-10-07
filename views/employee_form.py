@@ -134,6 +134,8 @@ if rv:
         st.markdown("**Review**")
         for w in rv["warnings"]:
             st.warning(w)
+        if rv.get("screenshot_warning"):
+            st.warning("🖼️ " + rv["screenshot_warning"])
         if rv.get("screenshot_note"):
             st.info("🖼️ " + rv["screenshot_note"])
         st.markdown(f"Priority {chip(rv['priority'])} &nbsp; <span class='muted'>worked out from who is affected "

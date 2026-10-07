@@ -35,7 +35,7 @@ from servicedesk.schemas import (ERRORS, AlertOut, BotAnswersOut, ChatOut, Check
                                  AttachmentOut)
 from servicedesk.services.analytics import AnalyticsService
 from servicedesk.services.auth import AuthError, AuthService
-from servicedesk.services.attachments import AttachmentError, summary_for_bot
+from servicedesk.services.attachments import AttachmentError, problem_lines, summary_for_bot
 from servicedesk.services.kb import KBError, fill_reply
 from servicedesk.services.privacy import PrivacyService
 from servicedesk.services.notify import NotificationService
@@ -584,6 +584,13 @@ def form_review(body: FormIn, user: dict = Depends(employee_only)):
     shots = [_my_attachment(a, user) for a in body.attachment_ids]
     if shots:  # the screenshot text is read by the same review as the typed fields
         form["screenshot_text"], form["screenshot_note"] = summary_for_bot(shots)
+        err = next((ln for s in shots if s["readable"] for ln in problem_lines(s["ocr_text"] or "")), "")
+        other = conv.screenshot_mismatch(body.category_id, err) if err and body.category_id else None
+        if other:  # 7 Oct: a screenshot of a different problem went in without a word
+            form["screenshot_warning"] = (
+                f"Your screenshot shows \"{err[:120]}\", which looks like a {k.name(other)} problem, not "
+                f"{k.name(body.category_id)}. Did you attach the right one? If not, remove it and add the right "
+                "screenshot, or change the category.")
     return conv.review_form(user["employee_id"], form)
 
 
@@ -1090,10 +1097,18 @@ def dashboard(date_from: str | None = None, date_to: str | None = None,
 
 @app.get("/analytics/bot-answers", tags=[T_INS], response_model=BotAnswersOut, responses=ERRORS,
          summary="Bot answers log + KB success rates")
-def bot_answers(kb_id: str | None = None, category_id: str | None = None, date_from: str | None = None,
-                date_to: str | None = None, user: dict = Depends(support_only)):
-    return {"answers": analytics.bot_answers(kb_id, category_id, date_from, date_to),
-            "success": analytics.kb_success()}
+def bot_answers(kb_id: str | None = None, category_id: list[str] | None = Query(None), date_from: str | None = None,
+                date_to: str | None = None, queue: list[str] | None = Query(None), agent: str | None = None,
+                outcome: str | None = None, search: str | None = None, user: dict = Depends(support_only)):
+    """Agents see their own teams' answers only (7 Oct: every agent saw every team's); a supervisor sees all,
+    narrowed by team, agent, category, article, outcome, dates or a search. The success table is worked out from
+    the same rows."""
+    queues = queue or None
+    if user["role"] == "agent":
+        queues = [q for q in (queue or user["queues"]) if q in user["queues"]] or user["queues"]
+    return analytics.bot_answers({"queues": queues, "agent": agent, "categories": category_id, "kb_id": kb_id,
+                                  "outcome": outcome, "date_from": date_from, "date_to": date_to,
+                                  "search": search})
 
 
 @app.get("/analytics/performance", tags=[T_INS], response_model=list[PerformanceRow], responses=ERRORS,
@@ -1169,12 +1184,19 @@ def _kb_call(fn, *args, **kw):
 
 @app.get("/kb", tags=[T_KB], responses=ERRORS, summary="All articles: live version, pending draft, helpfulness")
 def kb_articles(user: dict = Depends(support_only)):
-    return kbs.articles()
+    """Each row carries the team that owns its category. Agents get their own teams' articles (7 Oct: like the
+    bot answers log, every agent saw everything)."""
+    return [a for a in kbs.articles() if _team_visible(user, a["team"])]
+
+
+def _team_visible(user: dict, team: str | None) -> bool:
+    return user["role"] == "supervisor" or team in user["queues"]
 
 
 @app.get("/kb/gaps", tags=[T_KB], responses=ERRORS, summary="Questions no article answered (what to write next)")
 def kb_gaps(days: int = Query(7, ge=1, le=90), user: dict = Depends(support_only)):
-    return kbs.gaps(ago(days=days))
+    """Grouped by category; agents see their own teams' categories (an unclear question goes to everyone)."""
+    return [g for g in kbs.gaps(ago(days=days)) if g["team"] is None or _team_visible(user, g["team"])]
 
 
 @app.get("/kb/{kb_id}", tags=[T_KB], responses=ERRORS, summary="One article: the original and every version")

@@ -255,7 +255,7 @@ push ──► CI: tests on SQLite + Postgres, Docker build
 - **Install, backups, monitoring and turning on automatic deployment:** [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Before real users:** [docs/GO-LIVE.md](docs/GO-LIVE.md) (approve articles, e-mail/Teams, alerts, key rotation).
 - **Rollback:** Actions → CD → *Run workflow* with an earlier commit SHA.
-- **Plain-words guides:** [docs/SD-Assistant_Explained.pdf](docs/SD-Assistant_Explained.pdf) (the employee's side, end to end) and [docs/SD-Assistant_IT_Side.pdf](docs/SD-Assistant_IT_Side.pdf) (agents and the supervisor; editable A4 Word copy: [.docx](docs/SD-Assistant_IT_Side.docx)); hands-on test script: [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
+- **Plain-words guides:** [docs/SD-Assistant_Explained.pdf](docs/SD-Assistant_Explained.pdf) (the employee's side, end to end) and [docs/SD-Assistant_IT_Side.pdf](docs/SD-Assistant_IT_Side.pdf) (agents and the supervisor; editable A4 Word copy: [.docx](docs/SD-Assistant_IT_Side.docx)); hands-on test script: [docs/TEST_PLAN.md](docs/TEST_PLAN.md). **Question by question** (every part, how it works and which file does it): [docs/SD-Assistant_How_It_Works_QA.pdf](docs/SD-Assistant_How_It_Works_QA.pdf) ([.docx](docs/SD-Assistant_How_It_Works_QA.docx)).
 
 ---
 
@@ -286,7 +286,7 @@ servicedesk/
 views/              employee: chat, form, my tickets · staff: queue, ticket, knowledge, charts, …
 ui/                 API client, shared styles, charts
 datasets/           28 JSON datasets (KB, routing, SLA, priority matrix, synthetic employees)
-tests/              109 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
+tests/              119 checks: spec scenarios 1–14, security, production, Phase 4, go-live, conversation quality
 deploy/  Dockerfile  docker-compose.yml  .github/workflows/  (ci.yml, cd.yml)
 docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · images
 ```
@@ -296,7 +296,7 @@ docs/               DEPLOY · GO-LIVE · PRIVACY · PILOT · run guide (PDF) · 
 ## Tests and evaluation
 
 ```powershell
-python -m pytest tests -q                    # 109 checks, offline (mock brain), about 1 minute
+python -m pytest tests -q                    # 119 checks, offline (mock brain), about 3 minutes
 $env:TEST_DATABASE_URL="postgresql://postgres:pw@localhost:5432/empty_db"; python -m pytest tests -q   # same on Postgres
 python evaluate.py --runs 2                  # live Jev: 43 chat cases, twice, model pinned
 python evaluate.py --mode form               # ticket-form cases

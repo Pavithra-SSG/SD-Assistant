@@ -110,7 +110,8 @@ def s01_vpn_fixed_on_attempt_2(h: Harness):
     assert r["attempt"] == 2, r
     h.chat(emp, sid, "Yes, it's fixed")
     t = h.ticket(tid)
-    assert t["status"] == "RESOLVED_PENDING_CONFIRMATION" and t["resolution_code"] == "Solved by bot", t
+    # their "yes, it's fixed" is the confirmation: closed straight away, no second click under My tickets
+    assert t["status"] == "RESOLVED" and t["resolution_code"] == "Solved by bot", t
     success = h.c.get("/analytics/bot-answers", headers=h.login(SUPERVISOR)).json()["success"]
     row = next(s for s in success if s["kb_id"] == t["kb_id"])
     assert row["fixed"] >= 1 and row["sent"] >= 2, row

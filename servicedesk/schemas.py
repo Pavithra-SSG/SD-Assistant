@@ -374,7 +374,9 @@ class DashboardOut(Out):
 
 class BotAnswersOut(Out):
     answers: list[dict] = Field(description="Every KB answer the bot sent, newest first")
-    success: list[dict] = Field(description="Per article: sent, fixed, success_rate")
+    success: list[dict] = Field(description="Per article, for the same rows: sent, fixed, not_fixed, escalated, "
+                                            "success_rate (fixed ÷ sent)")
+    total: int = Field(0, description="Answers matching the filters (the list shows the newest 1000)")
 
 
 class PerformanceRow(Out):

@@ -13,20 +13,39 @@ meta = client.meta()
 st.markdown("## Knowledge")
 
 tab_a, tab_g, tab_r = st.tabs(["Articles", "Knowledge gaps", "Saved replies"])
+teams = meta["queues"] if is_sup else user["queues"]
+
+
+def team_filter(key: str) -> str:
+    """'' = every team this person can see (a supervisor: all; an agent: their own)."""
+    return st.selectbox("Team", ["", *teams], key=key, label_visibility="collapsed",
+                        format_func=lambda q: q or ("All teams" if is_sup else "All my teams"))
+
 
 # ------------------------------------------------------------------ articles
 with tab_a:
-    arts = client.get("/kb")
+    all_arts = client.get("/kb")
+    c1, c2, c3 = st.columns([3, 2, 2])
+    q = c1.text_input("Find", placeholder="Article number or title", label_visibility="collapsed", key="kb_find")
+    with c2:
+        team = team_filter("kb_team")
+    cat_names = sorted({a["category"] for a in all_arts})
+    cat = c3.selectbox("Category", ["", *cat_names], format_func=lambda c: c or "All categories",
+                       label_visibility="collapsed", key="kb_cat")
+    arts = [a for a in all_arts if (not q or q.lower() in f"{a['kb_id']} {a['title']}".lower())
+            and (not team or a["team"] == team) and (not cat or a["category"] == cat)]
+    if not is_sup:
+        st.caption(f"Articles for your team{'s' if len(teams) > 1 else ''}: {', '.join(teams)}.")
     waiting = [a for a in arts if a["draft_version"]]
     st.caption(f"{sum(1 for a in arts if a['live_version'])} of {len(arts)} articles have an approved employee "
                f"version · {len(waiting)} draft(s) waiting for approval. Employees see only approved text.")
     st.dataframe(pd.DataFrame([{
-        "Article": a["kb_id"], "Title": a["title"], "Category": a["category"],
+        "Article": a["kb_id"], "Title": a["title"], "Category": a["category"], "Team": a["team"] or "—",
         "Live": f"v{a['live_version']}" if a["live_version"] else "— (plain article)",
         "Draft waiting": f"v{a['draft_version']}" if a["draft_version"] else "",
         "Helpful": None if a["helpful_rate"] is None else round(a["helpful_rate"] * 100),
         "Ratings": a["helpful"] + a["not_helpful"]} for a in arts]),
-        hide_index=True, width="stretch", height=300,
+        hide_index=True, width="stretch", height=min(320, 38 + 35 * max(1, len(arts))),
         column_config={"Helpful": st.column_config.ProgressColumn("Helpful %", min_value=0, max_value=100,
                                                                   format="%d%%")})
 
@@ -129,15 +148,20 @@ with tab_a:
 
 # ------------------------------------------------------------------ knowledge gaps
 with tab_g:
-    days = st.segmented_control("Period", [7, 30, 90], default=7, format_func=lambda d: f"Last {d} days")
-    gaps = client.get("/kb/gaps", days=days or 7)
+    g1, g2 = st.columns([3, 2], vertical_alignment="center")
+    with g1:
+        days = st.segmented_control("Period", [7, 30, 90], default=7, format_func=lambda d: f"Last {d} days")
+    with g2:
+        gteam = team_filter("gap_team")
+    gaps = [g for g in client.get("/kb/gaps", days=days or 7) if not gteam or g["team"] == gteam]
     if not gaps:
         st.info("No unanswered questions in this period. 🎉")
     st.caption("Real questions no article could answer, most frequent first. Write or extend an article for the "
                "top ones.")
     for g in gaps:
         with st.container(border=True):
-            st.markdown(f"**{g['category']}** · asked {g['count']} time{'s' if g['count'] != 1 else ''}")
+            st.markdown(f"**{g['category']}** · {g['team'] or 'any team'} · asked {g['count']} "
+                        f"time{'s' if g['count'] != 1 else ''}")
             for e in g["examples"]:
                 st.markdown(f"- _{e['question'][:200]}_ <span class='muted'>({local(e['at'])})</span>",
                             unsafe_allow_html=True)

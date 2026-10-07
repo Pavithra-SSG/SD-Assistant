@@ -342,3 +342,38 @@ def test_image_without_text_is_described_honestly(h, ocr):
     r = _send_shot(h, emp, sid)
     assert "couldn't find any text" in r["reply"] and "What's going wrong?" in r["reply"]
     assert "Hi!" not in r["reply"] and not r["ticket_id"]
+
+
+def test_first_message_with_a_screenshot_of_another_problem_is_questioned(h, ocr):
+    """7 Oct (client): "if they upload a wrong screenshot, how is the user told?" Typed VPN, attached a printer
+    error: the bot asks first, then goes by what they typed."""
+    from servicedesk.orchestrator import SEPARATE_PROBLEM, WRONG_SHOT
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    ocr(("Error: Paper jam in Tray 2 of the printer", 0.97))
+    r = _send_shot(h, emp, sid, "my VPN won't connect from home")
+    assert "Paper jam" in r["reply"] and "right screenshot" in r["reply"], r["reply"]
+    assert r["quick_replies"] == [WRONG_SHOT, SEPARATE_PROBLEM] and not r["ticket_id"]
+    r = h.chat(emp, sid, WRONG_SHOT)
+    assert "go by what you typed" in r["reply"]
+    tickets = h.api.store.tickets(employee_id=emp)
+    assert all(t["category_id"] != "CAT-10" for t in tickets)
+
+
+def test_matching_screenshot_on_the_first_message_is_not_questioned(h, ocr):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    ocr(("VPN Client - Error 809: the network connection could not be established", 0.97))
+    r = _send_shot(h, emp, sid, "my VPN won't connect from home")
+    assert "right screenshot" not in (r["reply"] or "")
+
+
+def test_form_warns_when_the_screenshot_shows_a_different_problem(h, ocr):
+    emp = h.fresh_employee()
+    ocr(("Error: Paper jam in Tray 2 of the printer", 0.97))
+    a = _upload(h, emp, _png()).json()
+    review = h.c.post("/forms/review", json={
+        "category_id": "CAT-02", "issue_type": "Other", "short_description": "VPN keeps dropping",
+        "impact_choice": "Only me", "workaround": "Partial workaround", "details": {},
+        "attachment_ids": [a["id"]]}, headers=h.login(emp)).json()
+    assert "Printer" in (review.get("screenshot_warning") or ""), review

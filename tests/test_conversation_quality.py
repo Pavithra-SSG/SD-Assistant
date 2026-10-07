@@ -640,7 +640,7 @@ def test_thanks_in_chat_after_an_agent_fixed_it_confirms_the_ticket(h):
     """After an agent resolved it, 'thanks, it works' in chat closed the chat but left the ticket waiting 3 days."""
     emp, sid, tid = _resolved_by_an_agent(h)
     r = h.chat(emp, sid, "thanks, it works now")
-    assert h.ticket(tid)["status"] == "RESOLVED" and "marked" in r["reply"]
+    assert h.ticket(tid)["status"] == "RESOLVED" and "closed" in r["reply"]
 
 
 def test_thanks_on_my_tickets_confirms_instead_of_reopening(h):
@@ -652,3 +652,58 @@ def test_thanks_on_my_tickets_confirms_instead_of_reopening(h):
     r = h.c.post(f"/me/tickets/{tid}/reply", json={"text": "thanks but it is still not working"},
                  headers=h.login(emp))
     assert r.json()["action"] == "reopened"
+
+
+def test_engineer_fixed_it_the_chat_asks_and_yes_closes_it(h):
+    """7 Oct (client): the employee should close it. The chat asks "is it working?" with two buttons."""
+    from servicedesk.services.tickets import FIX_NO, FIX_YES
+    emp, sid, tid = _resolved_by_an_agent(h)
+    last = [m for m in h.api.store.messages(sid) if m["role"] == "bot"][-1]
+    assert "Is it working" in last["text"] and last["meta"]["quick_replies"] == [FIX_YES, FIX_NO]
+    assert h.ticket(tid)["status"] == "RESOLVED_PENDING_CONFIRMATION"
+    r = h.chat(emp, sid, FIX_YES)
+    assert h.ticket(tid)["status"] == "RESOLVED" and "closed" in r["reply"]
+
+
+def test_engineer_fixed_it_but_no_sends_it_back_to_the_team(h):
+    from servicedesk.services.tickets import FIX_NO
+    emp, sid, tid = _resolved_by_an_agent(h)
+    r = h.chat(emp, sid, FIX_NO)
+    t = h.ticket(tid)
+    assert t["status"] == "ESCALATION_QUEUED" and t["reopened_count"] == 1 and "reopened" in r["reply"]
+
+
+def test_a_new_problem_after_the_fix_question_is_handled_normally(h):
+    emp, sid, tid = _resolved_by_an_agent(h)
+    r = h.chat(emp, sid, "my printer is jammed on floor 3")
+    assert h.ticket(tid)["status"] == "RESOLVED_PENDING_CONFIRMATION" and r["reply"]
+
+
+def test_bot_answers_log_shows_an_agent_only_their_teams(h):
+    """7 Oct (client): an engineer saw every team's answers (printer, VPN, password…), a major bug."""
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    h.answer_until_attempt(emp, sid, "VPN error 809 when I connect from home, only me affected")
+    vpn_agent = h.agent_for("Network Remote Access")
+    other = next(u["user_id"] for u in h.api.auth.users("agent") if "Network Remote Access" not in u["queues"])
+    mine = h.c.get("/analytics/bot-answers", headers=h.login(vpn_agent)).json()
+    theirs = h.c.get("/analytics/bot-answers", headers=h.login(other)).json()
+    agent_queues = next(u["queues"] for u in h.api.auth.users("agent") if u["user_id"] == other)
+    assert mine["answers"] and all(r["team"] in next(u["queues"] for u in h.api.auth.users("agent")
+                                                      if u["user_id"] == vpn_agent) for r in mine["answers"])
+    assert all(r["team"] in agent_queues for r in theirs["answers"])
+    assert not any(r["team"] == "Network Remote Access" for r in theirs["answers"])
+    sup = h.c.get("/analytics/bot-answers", params={"queue": ["Network Remote Access"]},
+                  headers=h.login("EMP2001")).json()
+    assert sup["answers"] and {r["team"] for r in sup["answers"]} == {"Network Remote Access"}
+    # the success table is counted from the same rows as the list
+    assert sum(s["sent"] for s in sup["success"]) == sum(1 for r in sup["answers"] if r["ticket_id"]
+                                                         and (r["attempt"] or 0) > 0)
+
+
+def test_knowledge_shows_an_agent_their_teams_articles(h):
+    agent = h.agent_for("Network Remote Access")
+    queues = next(u["queues"] for u in h.api.auth.users("agent") if u["user_id"] == agent)
+    arts = h.c.get("/kb", headers=h.login(agent)).json()
+    assert arts and all(a["team"] in queues for a in arts)
+    assert len(h.c.get("/kb", headers=h.login("EMP2001")).json()) == len(h.api.k.kb)
