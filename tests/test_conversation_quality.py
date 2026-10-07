@@ -621,3 +621,34 @@ def test_after_two_failed_fixes_the_employee_hears_what_happens_next():
     for kb_id, a in drafts.items():
         if isinstance(a, dict) and (a.get("attempt2") or {}).get("who") == "you":
             assert "What happens next" in (a.get("handoff_message") or ""), kb_id
+
+
+def _resolved_by_an_agent(h):
+    emp = h.fresh_employee()
+    sid = h.new_session(emp)
+    tid = h.chat(emp, sid, "I clicked a link and typed my password on a fake login page")["ticket_id"]
+    agent = h.agent_for(h.ticket(tid)["queue"])
+    assert h.c.post(f"/tickets/{tid}/takeover", headers=h.login(agent)).status_code == 200
+    h.tick_all_required(agent, tid)
+    r = h.c.post(f"/tickets/{tid}/resolve", json={"resolution_code": "Solved by agent", "notes": "Reset done"},
+                 headers=h.login(agent))
+    assert r.status_code == 200, r.text
+    return emp, sid, tid
+
+
+def test_thanks_in_chat_after_an_agent_fixed_it_confirms_the_ticket(h):
+    """After an agent resolved it, 'thanks, it works' in chat closed the chat but left the ticket waiting 3 days."""
+    emp, sid, tid = _resolved_by_an_agent(h)
+    r = h.chat(emp, sid, "thanks, it works now")
+    assert h.ticket(tid)["status"] == "RESOLVED" and "marked" in r["reply"]
+
+
+def test_thanks_on_my_tickets_confirms_instead_of_reopening(h):
+    """Replying 'thank you, all good' on My tickets reopened the ticket and sent it back to the queue."""
+    emp, _, tid = _resolved_by_an_agent(h)
+    r = h.c.post(f"/me/tickets/{tid}/reply", json={"text": "thank you, all good"}, headers=h.login(emp))
+    assert r.json()["action"] == "confirmed" and h.ticket(tid)["status"] == "RESOLVED"
+    emp, _, tid = _resolved_by_an_agent(h)
+    r = h.c.post(f"/me/tickets/{tid}/reply", json={"text": "thanks but it is still not working"},
+                 headers=h.login(emp))
+    assert r.json()["action"] == "reopened"

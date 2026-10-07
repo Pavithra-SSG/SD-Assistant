@@ -388,8 +388,9 @@ class TicketService:
                             resolution_code=code, resolution_notes=notes, resolved_at=now())
         self._set_session_stage(t, "IDLE")
         if t["session_id"]:
-            self.store.add_message(t["session_id"], "system", f"✅ {tid} was resolved by {user['name']}. "
-                                   "Reply within 7 days if it comes back.", ticket_id=tid, author=user["user_id"])
+            self.store.add_message(t["session_id"], "system", f"✅ {tid} was resolved by {user['name']}. If it's working, "
+                                   "reply \"thanks\" (or tap **Confirm it's fixed** under **My tickets**). If it "
+                                   "comes back within 7 days, just describe it here.", ticket_id=tid, author=user["user_id"])
         if self.notify:
             self.notify.notify(t["employee_id"], tid, f"{tid} was resolved by {user['name']}. Please confirm.")
         return t

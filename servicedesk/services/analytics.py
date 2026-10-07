@@ -284,8 +284,13 @@ class AnalyticsService:
                         s["resolved"] += 1
                         if a in claim_at:
                             s["resolution"].append(_hours(claim_at[a], e["created_at"]))
+                        # the same verdict as the ticket timer and Charts C5 (business hours, paused while waiting
+                        # on the employee); plain clock hours only if the ticket has since been reopened (7 Oct)
+                        verdict = self._sla(t).get("resolve_state") if t else None
                         sla = self.k.sla_target(t["category_id"], t["priority"]) if t else None
-                        if sla and _hours(t["created_at"], e["created_at"]) <= sla["Resolution_Target_Hours"]:
+                        if verdict in ("met", "breached"):
+                            s["sla_met"] += verdict == "met"
+                        elif sla and _hours(t["created_at"], e["created_at"]) <= sla["Resolution_Target_Hours"]:
                             s["sla_met"] += 1
                         req = [c for c in self.tickets.checklist(tid) if c["required"]]
                         s["checklist_ok"] += all(c["done_at"] and c["done_at"] <= e["created_at"] for c in req)

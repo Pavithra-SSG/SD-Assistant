@@ -49,6 +49,9 @@ h1 { font-size:1.75rem !important; } h2 { font-size:1.35rem !important; } h3 { f
 .tl-row { font-size:.86rem; margin:.1rem 0 .45rem; }
 .tl-time { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:.4rem; }
 .tl-internal { background:#FFF8E6; border-radius:3px; padding:0 4px; }
+.tl-row details { display:inline; } .tl-row summary { display:inline; cursor:pointer; list-style:none; }
+.tl-row summary::-webkit-details-marker { display:none; } .tl-more { color:var(--muted); font-size:.8rem; }
+.tl-tag { color:#7A4510; font-size:.75rem; margin-right:.3rem; }
 .flag-bar { height:6px; background:#EAEFF4; border-radius:3px; overflow:hidden; margin:2px 0 6px; }
 .flag-bar > div { height:6px; border-radius:3px; }
 .muted { color:var(--muted); font-size:.85rem; }

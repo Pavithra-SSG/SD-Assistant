@@ -26,7 +26,7 @@ from servicedesk import config
 from servicedesk.directory import employee_exists, employee_profile
 from servicedesk.logs import setup as setup_logging
 from servicedesk.knowledge import FORM_CONTACT_OPTIONS, FORM_IMPACT_OPTIONS, FORM_WORKAROUND_OPTIONS
-from servicedesk.orchestrator import ConversationService, _reply_extras, redact_inline
+from servicedesk.orchestrator import ConversationService, _reply_extras, is_thanks, redact_inline
 from servicedesk.schemas import (ERRORS, AlertOut, BotAnswersOut, ChatOut, ChecklistItem, ChoiceOut, CorrectionOut,
                                  DashboardOut, EmployeeTicket, EmployeeTicketDetail, HealthOut, LoginOut, MeOut,
                                  MessageOut, MetaOut, NotificationOut, Ok, PendingAlertsOut, PerformanceRow, QueueRow,
@@ -678,6 +678,10 @@ def my_reply(ticket_id: str, body: TextIn, user: dict = Depends(employee_only)):
         for uid in {t["owner"], *tickets.watchers(ticket_id)} - {None}:
             notify.notify(uid, ticket_id, f"Employee replied on {ticket_id}: {body.text[:80]}")
         return {"action": "comment"}
+    if t["status"] == "RESOLVED_PENDING_CONFIRMATION" and is_thanks(body.text):
+        # "thanks, works now" is a confirmation, not a reason to reopen (7 Oct: it reopened the ticket)
+        tickets.confirm(ticket_id, user["employee_id"])
+        return {"action": "confirmed"}
     if t["status"] in ("RESOLVED_PENDING_CONFIRMATION", "RESOLVED") and tickets.within_reopen_window(t):
         tickets.reopen(ticket_id, user["employee_id"], body.text)
         return {"action": "reopened"}

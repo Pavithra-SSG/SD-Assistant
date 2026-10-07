@@ -231,8 +231,9 @@ class EmployeeTicketDetail(EmployeeTicket):
 
 
 class ReplyOut(Out):
-    action: Literal["chat", "comment", "reopened", "new_ticket"] = Field(
-        description="chat: bot answered · comment: added for the engineer · reopened · new_ticket (past 7 days)")
+    action: Literal["chat", "comment", "confirmed", "reopened", "new_ticket"] = Field(
+        description="chat: bot answered · comment: added for the engineer · confirmed (a thanks on a resolved "
+                    "ticket) · reopened · new_ticket (past 7 days)")
     reply: str | None = None
     quick_replies: list[str] | None = None
     ticket_id: str | None = None

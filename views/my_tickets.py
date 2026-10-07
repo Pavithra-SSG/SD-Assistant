@@ -96,7 +96,8 @@ with right:
             st.caption(local(m["created_at"]))
 
     if t["can_reopen"]:
-        st.caption("Came back? Replying reopens this ticket (up to 7 days after it was resolved).")
+        st.caption(("Working now? Tap **Confirm it's fixed** above, or reply \"thanks\". " if t["can_confirm"] else "")
+                   + "Came back? Describe it here and the ticket reopens (up to 7 days after it was resolved).")
         label = "Describe what's happening again"
     elif t["status"] in ("CLOSED", "RESOLVED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION"):
         st.caption("This ticket is past its reopen window. Replying opens a new ticket linked to this one.")
@@ -111,6 +112,8 @@ with right:
             except ApiError as e:
                 st.error(str(e.detail))
             else:
+                if res.get("action") == "confirmed":
+                    st.toast("Thanks! Marked as fixed.")
                 if res.get("action") == "new_ticket":
                     ss.my_open = res["ticket_id"]
                 st.rerun()

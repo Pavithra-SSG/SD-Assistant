@@ -71,6 +71,14 @@ CHASE = "Ask the team to prioritise this"
 DONE_STATUSES = ("RESOLVED", "CLOSED", "CANCELLED", "RESOLVED_PENDING_CONFIRMATION")
 _THANKS = re.compile(r"(?i)\b(thanks?|thank\s*you|thx|ty|cheers|much appreciated|great,? (it )?works|that worked|"
                      r"bye|goodbye|that'?s all|all good|perfect)\b")
+
+
+def is_thanks(message: str) -> bool:
+    """A short "thanks / it works" with nothing that says it's still broken."""
+    return len(message.split()) <= 6 and bool(_THANKS.search(message)) and not re.search(
+        r"(?i)\b(but|not|still|isn'?t|doesn'?t|won'?t|can'?t|error|issue|problem)\b", message)
+
+
 _FRUSTRATION = re.compile(r"(?i)\b(frustrat\w*|annoy\w*|angry|upset|fed up|ridiculous|unacceptable|useless|"
                           r"disappointed|still waiting|waiting (so|too|very) long|no one|nobody|hurry|asap|"
                           r"urgent(ly)?|how much longer|taking (so|too) long)\b")
@@ -602,6 +610,11 @@ class ConversationService:
             open_mine = next((t for t in open_t if t["ticket_id"] == mine), None)
             tail = (f" **{open_mine['ticket_id']}** is still with the team, and their reply will appear under "
                     "**My tickets**." if open_mine else "")
+            # an engineer just resolved it and the employee says thanks: that's the confirmation (7 Oct)
+            done = self.store.one("SELECT status FROM tickets WHERE ticket_id=?", (mine,)) if mine else None
+            if done and done["status"] == "RESOLVED_PENDING_CONFIRMATION":
+                self.tickets.confirm(mine, self._employee["Employee_ID"])
+                tail = f" I've marked **{mine}** as fixed. If it comes back within 7 days, just tell me."
             self._st["stage"] = "ENDED"
             self._t("Conversation", "employee said thanks → conversation closed")
             return Reply(f"You're welcome! 😊 Glad I could help.{tail}\n\nI've closed this conversation. If anything "
@@ -613,8 +626,7 @@ class ConversationService:
 
     def _triage(self, message: str, force_ticket: bool = False, unclear_ok: bool = False) -> Reply:
         st = self._st
-        if not force_ticket and len(message.split()) <= 6 and _THANKS.search(message) \
-                and not re.search(r"(?i)\b(but|not|still|isn'?t|doesn'?t|won'?t|can'?t|error|issue|problem)\b", message):
+        if not force_ticket and is_thanks(message):
             self._t("Intent router", "thanks / goodbye (no model call)")
             return self._small_talk(message)
         tri = self.brain.triage(message, self._history())

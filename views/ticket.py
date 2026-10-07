@@ -275,23 +275,36 @@ with tab_c:
         st.selectbox("Start from a saved reply", list(by_id), index=None, key=f"{key}-saved",
                      format_func=lambda i: by_id[i]["title"], placeholder="Start from a saved reply (optional)",
                      on_change=_insert_reply, label_visibility="collapsed")
+notes_so_far = [m for m in d["messages"] if m["visibility"] == "internal"]
+with tab_w:  # the notes right where they're written, so a new one is seen to land (7 Oct: it seemed not to save)
+    for m in notes_so_far:
+        st.markdown(f"<div class='tl-row'><span class='tl-time'>{local(m['created_at'])}</span><b>👤 "
+                    f"{html_lib.escape(m['meta'].get('agent', 'Agent'))}</b> <span class='tl-internal'>"
+                    f"{html_lib.escape(m['text'])}</span></div>", unsafe_allow_html=True)
+    if not notes_so_far:
+        st.caption("No work notes yet. Only IT staff see them; the employee never does.")
 for tab, vis in ((tab_c, "customer"), (tab_w, "internal")):
     with tab, st.form(f"{key}-{vis}", clear_on_submit=True):
         text = st.text_area("Comment" if vis == "customer" else "Work note", label_visibility="collapsed",
                             key=f"{key}-{vis}-text",
                             placeholder="The employee sees this" if vis == "customer" else "Only IT staff see this")
         if st.form_submit_button("Post comment" if vis == "customer" else "Add work note") and text.strip():
-            act(f"/tickets/{tid}/comment", {"text": text, "visibility": vis})
+            act(f"/tickets/{tid}/comment", {"text": text, "visibility": vis},
+                ok="Comment sent to the employee" if vis == "customer" else "Work note added")
 
 # ------------------------------------------------------------------ activity
 st.markdown("#### Activity")
-flt = st.segmented_control("Show", ["Everything", "Conversation", "Work notes", "Bot decisions", "System"],
-                           default="Everything", key=f"{tid}-flt")
+# default: what people said (employee, bot replies, comments, work notes). Every state change and model step is
+# one click away, but shown by default they buried the conversation (7 Oct: "listed too much")
+flt = st.segmented_control("Show", ["Conversation", "Work notes", "Bot decisions", "System", "Everything"],
+                           default="Conversation", key=f"{tid}-flt") or "Conversation"
 items = []
 for m in d["messages"]:
     who = {"user": "🧑‍💻 Employee", "bot": "🤖 Bot", "agent": f"👤 {m['meta'].get('agent', 'Agent')}",
            "system": "ℹ️ System"}[m["role"]]
     kind = "Work notes" if m["visibility"] == "internal" else "Conversation"
+    if m["role"] == "system":
+        kind = "System"
     # within one second: the employee's message, then the bot's steps, then its reply (ids from two tables
     # don't order each other, 4 Oct: "Install it on my laptop" showed after the steps it caused)
     items.append((m["created_at"], 0 if m["role"] == "user" else 2, m["id"], kind, who, m["text"],
@@ -311,17 +324,56 @@ for e in d["events"]:
 items.sort(key=lambda x: (x[0], x[1], x[2]))
 html = []
 for ts, _, _id, kind, who, text, internal in items:
-    if flt != "Everything" and kind != flt:
+    # Conversation also shows the work notes, in order: the whole human story in one list
+    if flt != "Everything" and kind != flt and not (flt == "Conversation" and kind == "Work notes"):
         continue
     # escape first: message text comes from employees and must never be rendered as HTML
     body = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html_lib.escape(text)).replace("\n", "<br>")
-    html.append(f"<div class='tl-row'><span class='tl-time'>{local(ts)}</span><b>{who}</b> "
+    if who == "🤖 Bot" and kind == "Conversation" and len(text) > 220:  # the employee saw it in full; fold it here
+        first = text.strip().split("\n", 1)[0][:160]
+        head = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html_lib.escape(first))
+        body = f"<details><summary>{head} <span class='tl-more'>… show all</span></summary><br>{body}</details>"
+    tag = "<span class='tl-tag'>work note</span>" if internal else ""
+    html.append(f"<div class='tl-row'><span class='tl-time'>{local(ts)}</span><b>{who}</b> {tag}"
                 f"<span class='{'tl-internal' if internal else ''}'>{body}</span></div>")
+if not html:
+    html.append("<div class='tl-row muted'>Nothing of this kind yet.</div>")
 st.markdown("<div class='tl'>" + "".join(html) + "</div>", unsafe_allow_html=True)
 
+
+
+def _plain(v) -> str:
+    if v in (None, "", [], {}):
+        return "—"
+    if isinstance(v, dict):
+        return "; ".join(f"{k.replace('_', ' ')}: {_plain(x)}" for k, x in v.items()) or "—"
+    if isinstance(v, list):
+        return "  |  ".join(_plain(x) for x in v)
+    return str(v)
+
+
+_LABEL = {"kb_id": "KB article", "sub_agent": "Bot specialist", "priority_reason": "Priority from",
+          "original_statement": "Employee's words", "details_collected": "Answers to the bot's questions",
+          "steps_tried": "Fixes already tried", "tool_results": "Checks the bot ran", "form_answers": "Form answers",
+          "risk_flags": "Risk flags", "requester": "Employee"}
+
+
+def _rows(data: dict) -> None:
+    """One labelled line per field, the empty ones left out (st.json folded it all into `{...}`, 7 Oct)."""
+    lines = [f"**{_LABEL.get(k, k.replace('_', ' ').capitalize())}:** {html_lib.escape(_plain(v))}"
+             for k, v in data.items() if v not in (None, "", [], {}) and k != "ticket_id"]
+    st.markdown("  \n".join(lines) or "_Nothing recorded._")
+
+
 with st.expander("Handoff package and form answers"):
-    st.json(t["handoff"] or {"note": "not escalated by the bot"}, expanded=False)
+    st.caption("What the bot passed to the team when it handed over: the employee's words, the answers it "
+               "collected, and the fixes already tried.")
+    if t["handoff"]:
+        _rows(t["handoff"])
+    else:
+        st.caption("No handoff: the bot didn't escalate this one (an agent logged it, or the bot solved it).")
     if t["form"]:
-        st.json(t["form"], expanded=False)
+        st.markdown("**Form answers** (the employee used the form)")
+        _rows(t["form"])
     if d["linked"]:
         st.markdown("Linked tickets: " + ", ".join(d["linked"]))
