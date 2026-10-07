@@ -366,7 +366,9 @@ class TicketService:
     def missing_for_resolve(self, t: dict, code: str | None, notes: str | None) -> list[str]:
         missing = [f"Checklist: {c['text']}" for c in self.checklist(t["ticket_id"]) if c["required"]
                    and not c["done_at"]]
-        if code not in RESOLUTION_CODES:
+        # a person resolving picks one of the agent codes: "Solved by bot" here would inflate the bot's success
+        # rate on Charts, and duplicates / cancellations have their own action (found 7 Oct, API accepted any code)
+        if code not in AGENT_RESOLUTION_CODES:
             missing.append("Resolution code")
         if not (notes or "").strip():
             missing.append("Resolution notes")

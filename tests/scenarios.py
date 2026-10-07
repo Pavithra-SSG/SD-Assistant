@@ -307,6 +307,10 @@ def s11_resolve_gate(h: Harness):
     assert r.status_code == 409 and r.json()["missing"], r.text
     missing = r.json()["missing"]
     h.tick_all_required(agent, tid)
+    # a person can't record their fix as the bot's (it would inflate the bot's success rate on Charts)
+    r = h.c.post(f"/tickets/{tid}/resolve", json={"resolution_code": "Solved by bot", "notes": "Fixed"},
+                 headers=h.login(agent))
+    assert r.status_code == 409 and "Resolution code" in r.json()["missing"], r.text
     r2 = h.c.post(f"/tickets/{tid}/resolve", json={"resolution_code": "Solved by agent", "notes": "Fixed"},
                   headers=h.login(agent))
     assert r2.status_code == 200, r2.text
